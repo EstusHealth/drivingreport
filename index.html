@@ -249,7 +249,11 @@ details.ref>summary{cursor:pointer;font-family:'Barlow Semi Condensed',sans-seri
 /* practice log */
 
 /* document tabs */
-#docTabs{display:none;gap:5px;flex-wrap:wrap;padding:9px 12px 0;position:sticky;top:0;z-index:4;background:#dcdad5}
+/* the document tabs and the formatting bar ride together, so neither can
+   stick to the top of the pane on top of the other */
+#pvTop{position:sticky;top:0;z-index:6;background:#dcdad5;margin:0 -20px;padding:0 20px}
+#pvTop>#previewClose{margin:0 -20px}
+#docTabs{display:none;gap:5px;flex-wrap:wrap;padding:9px 0 0;background:#dcdad5}
 .doctab{border:1px solid #c3c1bc;border-bottom:none;background:#cfcdc8;color:#3a3934;font-family:'Barlow Semi Condensed',sans-serif;
   font-weight:600;font-size:11.5px;letter-spacing:.04em;padding:7px 13px;border-radius:5px 5px 0 0;cursor:pointer}
 .doctab:hover{background:#dedcd7}
@@ -288,7 +292,7 @@ details.ref>summary{cursor:pointer;font-family:'Barlow Semi Condensed',sans-seri
 /* ============ PREVIEW TOGGLE (all widths) ============ */
 #tbActions{display:flex;gap:8px;align-items:center}
 #tbMoreBtn{display:none;font-size:15px;line-height:1;padding:6px 12px}
-#previewClose{display:none;position:sticky;top:0;z-index:5;width:100%;border:none;background:var(--ink);color:#fff;
+#previewClose{display:none;width:100%;border:none;background:var(--ink);color:#fff;
   font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:13px;letter-spacing:.06em;padding:13px;cursor:pointer}
 body.preview-hidden #previewPane{display:none}
 body.preview-hidden #formPane{width:100%;border-right:none}
@@ -302,6 +306,9 @@ body.preview-hidden #formPane{width:100%;border-right:none}
   #formPane{width:100%;min-width:0;border-right:none;-webkit-overflow-scrolling:touch}
   #previewPane{position:fixed;inset:0;z-index:150;padding:0;background:#dcdad5}
   #previewPane #reportRoot{padding:10px 8px 60px;overflow-x:auto}
+  #pvTop{margin:0;padding:0 10px}
+  #pvTop>#previewClose{margin:0 -10px}
+  #editBar{margin:8px 0}
   #previewClose{display:block}
   .page{width:auto;max-width:100%;min-height:0;padding:9mm 7mm 12mm;box-shadow:0 4px 14px -8px rgba(0,0,0,.4);margin:0 auto 14px}
 
@@ -357,7 +364,7 @@ body.preview-hidden #formPane{width:100%;border-right:none}
   .vitem{padding:12px 10px;font-size:14.5px}
   .swatch input[type=color]{width:56px;height:42px}
   .doctab{font-size:13px;padding:11px 16px;min-height:42px}
-  #docTabs{padding:9px 10px 0}
+  #docTabs{padding:9px 0 0}
   .refcard,.hint{font-size:13px}
   .resetlink,.noteslink{font-size:12px;padding:3px 0;display:inline-block}
 
@@ -384,9 +391,84 @@ body.preview-hidden #formPane{width:100%;border-right:none}
   .page{padding:7mm 5mm 10mm}
 }
 
+/* ============ REPORT LAYOUT PANEL ============
+   The list of sections that make up the report — tick to include, arrows to
+   move, the heading text editable in place, and a nested list for the lines
+   of the details table so individual fields can be renamed or dropped. */
+.btn.tiny{padding:3px 7px;font-size:11px;line-height:1.2;background:#e9e7e2;color:#3a3934}
+.btn.tiny:hover{background:#d8d6d1}
+.btn.tiny:disabled{opacity:.3;cursor:default;background:#e9e7e2}
+.btn.tiny.del{color:#8c2f2f}
+.btn.tiny.del:hover{background:#f3dede}
+.lbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.lcount{font-size:11.5px;color:var(--faint);margin-left:auto}
+.llist{border:1px solid var(--line);border-radius:5px;background:#fff;overflow:hidden}
+.lgrp{display:flex;gap:8px;align-items:center;padding:8px 10px;background:#f4f2ee;border-top:1px solid var(--line)}
+.llist>.lgrp:first-child{border-top:none}
+.lgrp label{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.lgrp input{flex:1;border:1px solid #d6d4cf;border-radius:4px;padding:4px 7px;font-family:'Oswald',sans-serif;font-weight:600;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);background:#fff}
+.lrow{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-top:1px solid var(--line)}
+.llist>.lrow:first-child{border-top:none}
+.lrow.off{background:#f7f6f3}
+.lrow.off .lname{color:var(--faint);text-decoration:line-through}
+.lchk{accent-color:var(--teal);width:15px;height:15px;margin-top:2px;flex:none}
+.lmain{flex:1;min-width:0}
+.lname{font-weight:600;font-size:13px;line-height:1.3}
+.ltag{display:inline-block;margin-left:6px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--faint);border-radius:3px;padding:1px 5px;vertical-align:1px}
+.ltag.ed{background:var(--plum)}
+.lhint{font-size:11px;color:var(--faint);line-height:1.4;margin-top:2px}
+.lhead{width:100%;margin-top:5px;border:1px solid #d6d4cf;border-radius:4px;padding:4px 7px;font-size:12.5px;font-family:'Barlow',sans-serif}
+.lhead:focus{outline:2px solid var(--teal);outline-offset:-1px}
+.llevel{margin-top:5px;border:1px solid #d6d4cf;border-radius:4px;padding:3px 6px;font-size:12px;font-family:'Barlow',sans-serif}
+.lbody{width:100%;margin-top:5px;border:1px solid #d6d4cf;border-radius:4px;padding:6px 8px;font-size:12.5px;font-family:'Barlow',sans-serif;line-height:1.45;resize:vertical}
+.lacts{display:flex;gap:3px;flex:none;padding-top:1px}
+.lfields{border-top:1px solid var(--line);background:#faf9f7}
+.lfhead{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:8px 10px 2px 34px}
+.lrow.sub{padding:5px 10px 5px 34px;border-top:1px dotted #e6e4df}
+.lrow.sub .lhead{margin-top:0;margin-bottom:3px}
+.lrow.sub.add{border-top:1px solid var(--line);padding-bottom:9px}
+
+/* ============ EDITING THE REPORT IN PLACE ============ */
+#editBar{display:none;gap:6px;align-items:center;flex-wrap:wrap;
+  background:var(--ink);color:#fff;padding:8px 12px;border-radius:5px;margin:10px auto;max-width:210mm;
+  font-family:'Barlow Semi Condensed',sans-serif;font-size:12px;letter-spacing:.04em}
+body.editreport #editBar{display:flex}
+#editBar b{font-family:'Oswald',sans-serif;font-weight:600;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#7fd0dd}
+#editBar .ebhint{flex:1 1 0;min-width:0;color:#b6b3ac;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#editBar button{border:none;border-radius:4px;background:#3a3934;color:#fff;padding:4px 9px;font-size:12px;cursor:pointer;font-family:'Barlow Semi Condensed',sans-serif}
+#editBar button:hover{background:#55534e}
+#editBar button.ebdone{background:var(--teal);font-weight:600}
+#editBar button.ebdone:hover{background:#238ea0}
+.rsecwrap{position:relative}
+.secchrome{display:none}
+body.editreport .rsecwrap{margin:0 -6px;padding:2px 6px 1px;border:1px dashed transparent;border-radius:4px}
+body.editreport .rsecwrap:hover{border-color:#cfd8dc;background:#fbfcfd}
+body.editreport .secchrome{display:flex;gap:4px;align-items:center;padding:3px 0 2px;
+  font-family:'Barlow Semi Condensed',sans-serif;font-size:11px;letter-spacing:.04em;opacity:.35;transition:opacity .12s}
+body.editreport .rsecwrap:hover .secchrome,body.editreport .rsecwrap:focus-within .secchrome{opacity:1}
+.secchrome .scname{font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:9.5px;color:var(--faint)}
+.secchrome .scbadge{font-weight:600;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--plum);border-radius:3px;padding:1px 5px}
+.secchrome .scsp{flex:1}
+.secchrome button{border:1px solid #d6d4cf;border-radius:3px;background:#fff;color:#55534e;padding:1px 6px;font-size:11px;cursor:pointer;font-family:inherit}
+.secchrome button:hover{background:#efece6;color:var(--ink)}
+.secchrome button:disabled{opacity:.3;cursor:default}
+body.editreport .rsecbody:focus{outline:2px solid var(--teal);outline-offset:3px;border-radius:2px}
+body.editreport .rsecgrp{outline:1px dashed #cfd8dc;outline-offset:3px}
+body.editreport .rsecgrp:focus{outline:2px solid var(--teal)}
+.rsecghost{display:none}
+body.editreport .rsecghost{display:block;margin:8mm 0 0;padding:9px 11px;border:1px dashed #c8c6c1;border-radius:5px;background:#f7f6f3;
+  font-family:'Barlow Semi Condensed',sans-serif;font-size:11.5px;color:var(--muted)}
+.rsecghost b{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.rsecghost button{border:1px solid #d6d4cf;border-radius:3px;background:#fff;color:#55534e;padding:2px 7px;margin:0 4px 4px 0;font-size:11.5px;cursor:pointer;font-family:inherit}
+.rsecghost button:hover{background:#fff;border-color:var(--teal);color:var(--ink)}
+.rsecghost button span{color:var(--teal);font-weight:600}
+
 @media print{
   body{background:#fff}
-  #formPane,#toolbar,#gradbar,#previewClose,#docTabs{display:none!important}
+  #formPane,#toolbar,#gradbar,#previewClose,#docTabs,#editBar,#pvTop{display:none!important}
+  .secchrome,.rsecghost{display:none!important}
+  .rsecwrap{border:none!important;background:none!important;margin:0!important;padding:0!important}
+  .rsecbody,.rsecgrp{outline:none!important}
   body.preview-hidden #previewPane{display:block!important}
   #app{display:block;height:auto;overflow:visible}
   #previewPane{position:static!important;inset:auto!important;z-index:auto!important;overflow:visible;padding:0;background:#fff}
@@ -409,6 +491,7 @@ body.preview-hidden #formPane{width:100%;border-right:none}
   </div>
   <input type="file" id="openFile" accept=".json" style="display:none" onchange="openJSON(event)">
   <span id="checkBadge" class="warn" onclick="showValidation()">checking…</span>
+  <button class="btn" id="tbEdit" onclick="toggleEditMode()">Edit report</button>
   <button class="btn" id="tbPreview" onclick="togglePreview()">Report</button>
   <button class="btn" id="tbMoreBtn" onclick="toggleMore()" aria-label="More actions">⋯</button>
 </div>
@@ -979,6 +1062,16 @@ body.preview-hidden #formPane{width:100%;border-right:none}
 </div>
 </details>
 
+<!-- ================= ✎ REPORT LAYOUT & SECTIONS ================= -->
+<details class="sec" id="layoutSec">
+<summary>✎ · Report Layout &amp; Sections <span class="n" id="nL"></span></summary>
+<div class="secbody">
+  <div class="hint">The report is assembled from the sections below, in this order. Untick anything this client's report does not need, drag it up or down with the arrows, rename any heading, or add a section of your own. Nothing is deleted from the draft — a section you switch off keeps its content and comes straight back when you tick it again.
+  <br><br><b>Edit the report directly</b> turns the preview into an editable document: click into any heading, sentence or table cell and type. A section you type into is marked <b>hand-edited</b> and stops following the form, so it is listed as something to check before you export — <b>↺</b> puts the generated wording back.</div>
+  <div id="layoutPanel"></div>
+</div>
+</details>
+
 <!-- ================= 7. REFERENCES ================= -->
 <details class="sec">
 <summary>7 · References</summary>
@@ -1032,7 +1125,20 @@ body.preview-hidden #formPane{width:100%;border-right:none}
 <div style="padding:14px 18px 40px;font-size:11px;color:var(--faint)">Draft autosaves to this browser. Use <b>Save draft</b> to keep a file copy per client. OT Driving Assessment Report Builder v2.0 · open source, MIT licensed</div>
 </div>
 
-<div id="previewPane"><button id="previewClose" onclick="togglePreview()">✕ Close report</button><div id="docTabs"></div><div id="reportRoot"></div></div>
+<div id="previewPane">
+<div id="pvTop"><button id="previewClose" onclick="togglePreview()">✕ Close report</button><div id="docTabs"></div>
+<div id="editBar">
+  <b>Editing the report</b>
+  <span class="ebhint">Click into any heading, sentence or table cell and type.</span>
+  <button type="button" onmousedown="event.preventDefault()" onclick="fmt('bold')" title="Bold"><b>B</b></button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="fmt('italic')" title="Italic"><i>I</i></button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="fmt('underline')" title="Underline"><u>U</u></button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="fmt('insertUnorderedList')" title="Bulleted list">• List</button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="fmt('removeFormat')" title="Strip formatting">Clear</button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="addCustomSec()" title="Add a section of your own">+ Section</button>
+  <button type="button" class="ebdone" onclick="setEditMode(false)">Done</button>
+</div></div>
+<div id="reportRoot"></div></div>
 </div>
 <div id="valModal" onclick="if(event.target===this)this.classList.remove('open')">
   <div id="valBox">
@@ -1785,6 +1891,14 @@ function freshState(){
     turnaround:'ok', turnaroundWhy:'', recordsRetained:'Assessment notes, raw test forms and report retained securely in the client file',
     compManual:{}, selfReview:false,
     docs:{gp:false,ndis:false,mdi:false,family:false}, docMeta:{}, activeDoc:'report',
+
+    /* ---- report layout ----
+       Which sections are in the report, in what order, under what heading,
+       and which of them the assessor has since written over by hand. Empty
+       means "exactly as the builder ships", so a draft that never touched
+       the layout picks up every later change to the standard report. */
+    secOrder:[], secOff:{}, secTitle:{}, secGroupTitle:{}, secEdit:{}, secCustom:[],
+    rowOrder:[], rowOff:{}, rowLabel:{}, rowCustom:[],
   };
   PHYS_ROWS.forEach(r=> s.phys[r.id]={note:'', issue:false, v1:'', v2:'', v3:'', v4:''});
   MUSCLES.forEach(m=> s.muscles[m.id]={tested:'no', grade:'', note:''});
@@ -3165,247 +3279,734 @@ const OUTCOME_PLAIN = {
   'cease':'not safe to drive at this time',
 };
 
-function buildReport(){
-  let h='';
-  h+=letterhead();
-  h+=`<h1 style="${ST.h1}">Occupational Therapy Driver Assessment Report</h1>`;
+/* ================================================================
+   THE REPORT, AS A LIST OF SECTIONS
+   The report used to be one long function. It is now an ordered list
+   of named sections, so any of them can be turned off, moved, retitled,
+   overwritten by hand or joined by a section of your own without
+   touching the code that builds the rest.
 
-  /* client details */
-  const conds=licenceConds();
-  h+=`<table style="${ST.tbl}">`+
-    TR('Report Reference / Version', [S.reportRef, S.reportVersion].filter(Boolean).join(' · '))+
-    TR('Name', fullNm())+TR('DOB', fmtDate(S.dob))+
-    (S.ndis? TR('NDIS No', S.ndis):'')+TR('Address', S.address)+
-    TR('Driver Licence Number', S.licNo? S.licNo + (S.licSighted==='Yes'? ' (sighted)':'') : '')+
-    TR('Driver Licence Conditions/Class', conds)+
-    TR('Driver Licence Expiry', S.licExpiry)+
-    TR('Presenting condition/diagnosis', S.diagnoses)+
-    TR('Medications', S.meds.filter(m=>m.name).map(m=>m.name+(m.dose? ' — '+m.dose:'')).join('; '))+
-    TR('Referrer/Medical Practitioner', [S.refName+(S.refRole?' ('+S.refRole+')':''), S.refOrg, S.refContact].filter(Boolean).join(' · '))+
-    TR('Date of Assessment', fmtDate(S.dateAssess))+TR('Date of Report', fmtDate(S.dateReport))+
-    TR('Report Completed by', S.assessor+'\n'+S.assessorRole+(S.ahpra? '\nAHPRA No. '+S.ahpra:''))+
-    `</table>`;
+   Each entry builds only its own body from the same state as before —
+   the heading is emitted by the assembler, which is what makes a
+   heading renamable without freezing the section under it.
+================================================================ */
+const SEC_GROUPS = [
+  {id:'gBackground', label:'Background Information'},
+  {id:'gPreRoad',    label:'Pre On-Road Assessment'},
+  {id:'gOnRoad',     label:'On-Road Assessment'},
+  {id:'gSummary',    label:'Summary and Recommendations'},
+  {id:'gBasis',      label:'Basis of Opinion, Limitations and Declaration'},
+];
+const SEC_GROUP_LABEL = {}; SEC_GROUPS.forEach(g=>SEC_GROUP_LABEL[g.id]=g.label);
+function groupTitle(gid){ const t=(S.secGroupTitle||{})[gid]; return t==null? (SEC_GROUP_LABEL[gid]||'') : t; }
 
-  /* reports reviewed */
-  const rev = REVIEWED_OPTS.filter(o=>S.reviewed[o.id]).map(o=>fill(o.text));
-  if(S.reviewedExtra) S.reviewedExtra.split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>rev.push(x));
-  h+=`<h2 style="${ST.h2}">Reports Reviewed</h2>`+P(rev.length? 'The following were reviewed as part of this assessment: '+rev.join('; ')+'.' : '');
-
-  /* background */
-  h+=`<h2 style="${ST.h2}">Background Information</h2>`;
-  const sup=personOf('supervisor'), stu=personOf('student');
-  let admin=`This Occupational Therapy Driving Assessment was conducted at ${S.location||'[location]'}. The assessment was administered by ${S.assessor} (${S.assessorRole})`;
-  if(sup) admin+=`, under the clinical supervision of ${sup.name} (${sup.qual})`;
-  if(S.mdi) admin+=`. On-road instruction was provided by ${S.mdi} (Motor Driving Instructor)`;
-  admin+='.';
-  if(stu) admin+=` ${stu.full} ${stu.role.rep}.`;
-  h+=P(admin);
-  h+=`<h3 style="${ST.h3}">Reason for Referral</h3>`+P(S.reasonReferral);
-  const consentBits=[txt(S.consentText)];
-  /* derived from the toggle rather than written into the editable text, so
-     ticking the student on afterwards cannot leave this silently missing */
-  if(stu) consentBits.push(`{name} was advised that ${stu.full} would be present, and consented to their presence.`);
-  if(txt(consentBits.join(' '))) h+=`<h3 style="${ST.h3}">Consent</h3>`+P(consentBits.filter(Boolean).join(' '));
-  if(S.symptoms) h+=`<h3 style="${ST.h3}">Current Symptoms and Functional Challenges</h3>`+P(S.symptoms);
-  if(S.medHistory) h+=`<h3 style="${ST.h3}">Medical History</h3>`+P(S.medHistory);
-  const meds=S.meds.filter(m=>m.name);
-  if(meds.length){
-    h+=`<h3 style="${ST.h3}">Treatment</h3><table style="${ST.tbl}"><tr><th style="${ST.th}">Name</th><th style="${ST.th}">Dosage/Frequency</th><th style="${ST.th}">Purpose</th></tr>`+
-      meds.map(m=>`<tr><td style="${ST.td}">${esc(m.name)}</td><td style="${ST.td}">${esc(m.dose)}</td><td style="${ST.td}">${esc(m.purpose)}</td></tr>`).join('')+`</table>`;
-    h+=P(S.medSideEffects);
-  }
-  if(S.drivingHistory) h+=`<h3 style="${ST.h3}">Driving History &amp; Current Driving Status</h3>`+P(S.drivingHistory);
-  if(S.prevAssess) h+=P({none:'{name} has not previously undergone an occupational therapy driver assessment.',prior:'{name} has previously undergone an occupational therapy driver assessment; details are set out above.',unknown:'{name} was unable to confirm whether a previous occupational therapy driver assessment has been conducted.'}[S.prevAssess]);
-
-  /* occupational profile */
-  const profOn=PROFILE_DOMAINS.filter(d=>{const p=S.profile[d.id]; return p && !p.na && txt(p.text);});
-  if(profOn.length){
-    h+=`<h3 style="${ST.h3}">Occupational Profile</h3><table style="${ST.tbl}">`+
-      profOn.map(d=>TR(d.label, S.profile[d.id].text)).join('')+`</table>`;
-    const naOn=PROFILE_DOMAINS.filter(d=>{const p=S.profile[d.id]; return p&&p.na&&txt(p.naWhy);});
-    if(naOn.length) h+=P('Not explored at this assessment: '+naOn.map(d=>d.label.toLowerCase()+' ('+txt(S.profile[d.id].naWhy)+')').join('; ')+'.');
-  }
-  h+=`<h3 style="${ST.h3}">Driving Needs</h3><table style="${ST.tbl}"><tr><th style="${ST.th}">Driving conditions</th><th style="${ST.th}">Current needs</th></tr>`+
-    NEEDS_ROWS.map(r=>{const n=S.needs[r.id];return `<tr><td style="${ST.lbl}">${r.label}</td><td style="${ST.td}">${esc(n.val)}${n.note? (/^(Yes|No)$/.test(n.val)? ', ':' — ')+esc(n.note):''}</td></tr>`}).join('')+`</table>`;
-
-  /* pre on-road */
-  h+=`<h2 style="${ST.h2}">Pre On-Road Assessment</h2>`;
-  h+=`<h3 style="${ST.h3}">Hearing and Communication Screen</h3>`;
-  const hearTxt={wnl:`{name} was able to hear and respond to all questions asked during the assessment. No hearing difficulties were reported${S.supportPerson? ' by {name} or '+S.supportPerson:''}.`,
-    aids:`{name} wears hearing aids and was able to hear and respond to all questions asked during the assessment with aids in place.`,
-    issue:`Hearing difficulties were noted during the assessment.`}[S.hearing];
-  h+=P(hearTxt + (S.hearingNote? ' '+S.hearingNote:''));
-
-  h+=`<h3 style="${ST.h3}">Visual Screen</h3>`;
-  h+=`<table style="${ST.tbl}"><tr><td style="${ST.lbl}">Corrective lenses recommended for driving</td><td style="${ST.td}">${S.lenses}</td><td style="${ST.lbl}">Endorsed on licence</td><td style="${ST.td}">${S.lensesEndorsed}</td></tr></table>`;
-  if(S.vaUR||S.vaCR||S.vaUB||S.vaCB){
-    h+=`<table style="${ST.tbl}"><tr><th style="${ST.th}" colspan="4">Visual Acuity (Snellen's Eye Chart)${S.acuityBy? ' — completed by: '+esc(S.acuityBy):''}</th></tr>
-    <tr><td style="${ST.lbl}"></td><td style="${ST.lbl};width:auto;text-align:center">Right</td><td style="${ST.lbl};width:auto;text-align:center">Left</td><td style="${ST.lbl};width:auto;text-align:center">Binocular</td></tr>
-    <tr><td style="${ST.lbl}">Uncorrected</td><td style="${ST.td};text-align:center">${esc(S.vaUR)}</td><td style="${ST.td};text-align:center">${esc(S.vaUL)}</td><td style="${ST.td};text-align:center">${esc(S.vaUB)}</td></tr>
-    <tr><td style="${ST.lbl}">Corrected</td><td style="${ST.td};text-align:center">${esc(S.vaCR)}</td><td style="${ST.td};text-align:center">${esc(S.vaCL)}</td><td style="${ST.td};text-align:center">${esc(S.vaCB)}</td></tr></table>`;
-  }
-  const vf={full:'Confrontation testing indicated full visual fields across all quadrants.',deficit:'Confrontation testing identified a visual field deficit.',nt:''}[S.vFields];
-  const vm={wnl:'Binocular eye movements (smooth pursuits and saccades) were smooth and accurate, with no reported dizziness.',issue:'Issues were observed with binocular eye movements.',nt:''}[S.vMovements];
-  h+=P([vf,vm,fill(S.visionNotes)].filter(Boolean).join(' '));
-  h+=`<table style="${ST.tbl}"><tr><td style="${ST.lbl};width:70%">Meets Austroads Vision Standard</td><td style="${ST.td}">${S.austroadsVision}</td></tr>
-      <tr><td style="${ST.lbl};width:70%">Recommend assessment by Orthoptist, Ophthalmologist or Optometrist</td><td style="${ST.td}">${S.eyeReview}</td></tr></table>`;
-
-  /* physical */
-  h+=`<h3 style="${ST.h3}">Physical Abilities &amp; Restrictions</h3>`;
-  /* a group heading prints when any of its lines did, even if the heading's own
-     cell is empty — otherwise the indented modalities have nothing to sit under */
-  const pDone=physFields().filter(physDone);
-  const pRec=physFields().filter((r,i,all)=>{
-    if(physDone(r)) return true;
-    if(r.kind!=='head') return false;
-    for(let k=all.indexOf(r)+1;k<all.length && all[k].sub;k++) if(physDone(all[k])) return true;
-    return false;
+/* ---------- the client details table, field by field ----------
+   Every line is addressable so it can be hidden, relabelled, moved or
+   joined by a line of your own — the one table in the report where the
+   fields themselves, not just the wording, differ between practices. */
+const DETAIL_ROWS = [
+  {id:'ref',        label:'Report Reference / Version', val:()=>[S.reportRef, S.reportVersion].filter(Boolean).join(' · ')},
+  {id:'name',       label:'Name',                       val:()=>fullNm()},
+  {id:'dob',        label:'DOB',                        val:()=>fmtDate(S.dob)},
+  {id:'ndis',       label:'NDIS No',                    val:()=>S.ndis, hideIfEmpty:true},
+  {id:'address',    label:'Address',                    val:()=>S.address},
+  {id:'licNo',      label:'Driver Licence Number',      val:()=>S.licNo? S.licNo + (S.licSighted==='Yes'? ' (sighted)':'') : ''},
+  {id:'licCond',    label:'Driver Licence Conditions/Class', val:()=>licenceConds()},
+  {id:'licExpiry',  label:'Driver Licence Expiry',      val:()=>S.licExpiry},
+  {id:'diagnoses',  label:'Presenting condition/diagnosis', val:()=>S.diagnoses},
+  {id:'meds',       label:'Medications',                val:()=>S.meds.filter(m=>m.name).map(m=>m.name+(m.dose? ' — '+m.dose:'')).join('; ')},
+  {id:'referrer',   label:'Referrer/Medical Practitioner', val:()=>[S.refName+(S.refRole?' ('+S.refRole+')':''), S.refOrg, S.refContact].filter(Boolean).join(' · ')},
+  {id:'dateAssess', label:'Date of Assessment',         val:()=>fmtDate(S.dateAssess)},
+  {id:'dateReport', label:'Date of Report',             val:()=>fmtDate(S.dateReport)},
+  {id:'by',         label:'Report Completed by',        val:()=>S.assessor+'\n'+S.assessorRole+(S.ahpra? '\nAHPRA No. '+S.ahpra:'')},
+];
+/* saved order first, then anything the saved order has never seen, slotted
+   back beside the neighbour it ships next to — so a draft written before a
+   section existed still picks it up in the right place. */
+function mergeOrder(saved, defOrder){
+  const valid=new Set(defOrder);
+  const out=(saved||[]).filter((id,i,a)=>valid.has(id)&&a.indexOf(id)===i);
+  defOrder.forEach((id,i)=>{
+    if(out.includes(id)) return;
+    let at=out.length;
+    for(let k=i-1;k>=0;k--){ const j=out.indexOf(defOrder[k]); if(j>=0){ at=j+1; break; } }
+    out.splice(at,0,id);
   });
-  if(txt(S.phys.hand.note)) h+=`<table style="${ST.tbl}">${TR('Hand dominance', S.phys.hand.note)}</table>`;
-  if(pRec.length){
-    /* the lead sentence names the areas from the row list, so it cannot go stale */
-    const areas=physRequired().filter(r=>!r.sub).map(r=>r.label.toLowerCase().replace(/\s*\(.*?\)/,''));
-    h+=P(`{name}'s physical skills were assessed including ${joinList(areas)}.`);
-    h+=`<table style="${ST.tbl}"><tr><th style="${ST.th};width:34%">Reported / observed physical abilities and restrictions</th><th style="${ST.th}">What was found</th></tr>`;
-    pRec.forEach(r=>{
-      const iss=physIssue(r);
-      h+=`<tr><td style="${ST.lbl}${r.sub?';padding-left:8mm;font-weight:400;font-style:italic':''}">${esc(r.label)}</td><td style="${ST.td}${iss?';color:#8c2f2f':''}">${paraSplit(physText(r))}</td></tr>`;
-    });
-    h+=`</table>`;
-    h+=`<p style="${ST.p};font-size:8pt;color:#8a8880">${esc(REFS.oxford)}<br>${esc(REFS.ashworth)}</p>`;
-  }
+  return out;
+}
+function detailRowDefs(){
+  const m={}; DETAIL_ROWS.forEach(r=>m[r.id]=r);
+  (S.rowCustom||[]).forEach(r=>m[r.id]={id:r.id, label:r.label, custom:true, hideIfEmpty:true, val:()=>r.value});
+  return m;
+}
+function detailRowOrder(){
+  return mergeOrder(S.rowOrder, DETAIL_ROWS.map(r=>r.id).concat((S.rowCustom||[]).map(r=>r.id)));
+}
+function rowOn(id){ return !(S.rowOff||{})[id]; }
+function rowLabel(id){
+  const t=(S.rowLabel||{})[id];
+  if(t!=null) return t;
+  const d=detailRowDefs()[id];
+  return d? d.label : '';
+}
+function detailTable(){
+  const defs=detailRowDefs();
+  const rows=detailRowOrder().map(id=>{
+    const r=defs[id]; if(!r || !rowOn(id)) return '';
+    let v=''; try{ v=String(r.val()??''); }catch(e){ v=''; }
+    /* the standard lines print even when empty, as the proforma does — a line
+       you added yourself only earns its row once it says something */
+    if(r.hideIfEmpty && !txt(v)) return '';
+    return TR(esc(rowLabel(id)), v);
+  }).filter(Boolean).join('');
+  return rows? `<table style="${ST.tbl}">${rows}</table>` : '';
+}
 
-  /* manual muscle testing */
-  const mTested=MUSCLES.filter(m=>S.muscles[m.id].tested==='yes'&&S.muscles[m.id].grade);
-  const mNot=MUSCLES.filter(m=>S.muscles[m.id].tested==='no');
-  const mNa=MUSCLES.filter(m=>S.muscles[m.id].tested==='na');
-  if(mTested.length){
-    h+=`<p style="${ST.p};font-size:9.5pt"><b>Manual muscle testing</b> — graded on the MRC (Oxford) 0–5 scale, where 5 indicates full range against full resistance.</p>`;
-    h+=`<table style="${ST.tbl}"><tr><th style="${ST.th};width:34%">Muscle group</th><th style="${ST.th};width:12%">Grade</th><th style="${ST.th}">Comment</th></tr>`;
-    let lg=null;
-    mTested.forEach(m=>{
-      if(m.g!==lg){ h+=`<tr><td colspan="3" style="${ST.grouprow}">${m.g}</td></tr>`; lg=m.g; }
-      const v=S.muscles[m.id];
-      h+=`<tr><td style="${ST.lbl}">${m.n}</td><td style="${v.grade==='5'?ST.ok:ST.td+';text-align:center;font-weight:700'}">${esc(v.grade)}</td><td style="${ST.td}">${esc(v.note)}</td></tr>`;
-    });
-    h+=`</table>`;
-  }
-  if(mNot.length){
-    h+=P(`Manual muscle testing was not completed for the following groups: ${mNot.map(m=>m.n.toLowerCase()+(txt(S.muscles[m.id].note)? ' ('+txt(S.muscles[m.id].note)+')':'')).join('; ')}. No conclusion about strength in ${mNot.length>1?'these groups':'this group'} is drawn in this report.`);
-  }
-  if(mNa.length) h+=P(`Not applicable for this client: ${mNa.map(m=>m.n.toLowerCase()).join('; ')}.`);
+/* ---------- the sections themselves ---------- */
+const REPORT_SECTIONS = [
+  {id:'letterhead', label:'Letterhead', always:true,
+   hint:'Practice logo, contact details and the coloured rule. Turn it off for a report that goes out on someone else’s letterhead.',
+   build:()=>letterhead()},
 
-  if(S.physSummary) h+=`<p style="${ST.p}"><b>Summary of physical skills for driving:</b> ${paraSplit(S.physSummary)}</p>`;
+  {id:'title', label:'Report title', hlevel:'h1', always:true,
+   heading:'Occupational Therapy Driver Assessment Report',
+   hint:'The main title line.',
+   build:()=>''},
 
-  /* cognition */
-  h+=`<h3 style="${ST.h3}">Cognition / Perception Abilities &amp; Restrictions</h3>`;
-  h+=`<table style="${ST.tbl}"><tr><th style="${ST.th}">Test</th><th style="${ST.th}">Purpose</th><th style="${ST.th}">Score</th><th style="${ST.th}">Indicates</th></tr>`;
-  const testRow=(id)=>{
-    const t=S.tests[id]; if(!t.on) return '';
-    const m=TEST_META[id];
-    const r=m.interp();
-    const cm=testCommentList(id).map(x=>`<br><b>${esc(x.label)}.</b> ${paraSplit(x.text)}`).join('');
-    return `<tr><td style="${ST.td}"><b>${m.name}</b></td><td style="${ST.td}">${m.purpose}</td><td style="${ST.td}">${esc(r.scoreTxt||'')}</td><td style="${ST.td}">${paraSplit(r.txt+(t.note? ' '+t.note:''))}${cm}</td></tr>`;
-  };
-  h+= TEST_ORDER_HEAD.map(testRow).join('');
-  const comb=dsdaCombined();
-  if(comb) h+=`<tr><td colspan="4" style="${ST.td};background:#f4f8f9">${paraSplit(comb)}</td></tr>`;
-  h+= testOrderTail().map(testRow).join('');
-  if(S.genCog) h+=`<tr><td style="${ST.td}"><b>General Cognitive Skills</b></td><td colspan="3" style="${ST.td}">${paraSplit(S.genCog)}</td></tr>`;
-  if(txt(S.psychosocial)) h+=`<tr><td style="${ST.td}"><b>Psychosocial Skills</b></td><td colspan="3" style="${ST.td}">${paraSplit(S.psychosocial)}</td></tr>`;
-  h+=`</table>`;
-  if(S.cogSummary) h+=`<p style="${ST.p}"><b>Summary of cognitive skills for driving:</b> ${paraSplit(S.cogSummary)}</p>`;
-  const pdRows=preDriveIssues();
-  if(pdRows.length){
-    h+=`<h3 style="${ST.h3}">Pre-Drive Outcome Summary</h3>`;
-    h+=`<table style="${ST.tbl}"><tr><th style="${ST.th};width:14%"></th><th style="${ST.th}">Issue</th><th style="${ST.th}">Possible impact on road</th><th style="${ST.th}">Considerations for the on-road assessment</th></tr>`+
-      pdRows.map(r=>`<tr><td style="${ST.lbl}">${esc(r.cat)}</td><td style="${ST.td}">${paraSplit(r.issue)}</td><td style="${ST.td}">${paraSplit(r.impact)}</td><td style="${ST.td}">${paraSplit(r.considerations)}</td></tr>`).join('')+`</table>`;
-  }
-  if(txt(S.fbOffRoad)) h+=`<h3 style="${ST.h3}">Feedback Following the Off-Road Assessment</h3>`+P(S.fbOffRoad);
-  if(S.onroadSuitable) h+=P({yes:'On the basis of the off-road findings, {name} was considered suitable to proceed to the on-road assessment.',deferred:'The on-road assessment was deferred pending further information.',no:'The off-road findings precluded proceeding to an on-road assessment on this occasion.'}[S.onroadSuitable]+(txt(S.furtherInfo)&&!/^none/i.test(txt(S.furtherInfo))? ' '+fill(S.furtherInfo):''));
+  {id:'details', label:'Client & assessment details table', always:true, fields:true,
+   hint:'The identifying table at the head of the report. Individual lines can be hidden, renamed or added below.',
+   build:()=>detailTable()},
 
-  /* on-road */
-  h+=`<h2 style="${ST.h2}">On-Road Assessment</h2>`;
-  h+=P(driveNarrative());
-  if(txt(S.mdiBrief)) h+=P('Prior to the on-road assessment the driving instructor was briefed on the relevant history, the planned route and the respective roles during the drive. '+fill(S.mdiBrief));
-  h+=`<h3 style="${ST.h3}">Assessment Results</h3>`;
-  h+=P('During the on-road assessment a number of driving behaviours were observed in the areas of observation, planning and judgment, vehicle positioning, speed control and physical control. Results are outlined below.');
-  CHECKLIST.forEach(g=>{
-    h+=`<p style="${ST.p};font-family:'Barlow Semi Condensed',Calibri,sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${BRAND.c1};margin:5mm 0 1mm">${esc(g.g)}</p>`;
-    /* The proforma's two checkbox columns. Not assessed and not yet rated both
-       leave the pair blank, as the proforma would — a not-assessed item carries
-       its reason in the further comments, and an unrated one cannot reach an
-       issued report because it is a hard export blocker. */
-    h+=`<table style="${ST.tbl}"><tr><th style="${ST.th}">Performance areas</th><th style="${ST.th};width:15%">Appropriate and safe</th><th style="${ST.th};width:19%">Issues observed<div style="font-weight:400;text-transform:none;letter-spacing:0">(see further comments for details)</div></th></tr>`+
-      g.items.map(it=>{
-        const c=S.checklist[it.id];
-        return `<tr><td style="${ST.td}">${it.text}</td>`+
-          `<td style="${ST.td};text-align:center;font-weight:700">${c.st==='safe'?'✓':''}</td>`+
-          `<td style="${ST.td};text-align:center;font-weight:700${c.st==='issue'?';color:#8c2f2f':''}">${c.st==='issue'?'✗':''}</td></tr>`;
-      }).join('')+`</table>`;
-    areaSafeProse(g).forEach(t=> h+=P(t));
-    const cmts=areaComments(g);
-    if(cmts.length) h+=`<p style="${ST.p}"><b>Further comments:</b> ${paraSplit(cmts.join('\n\n'))}</p>`;
-  });
-  const ivs=interventionList();
-  h+=`<h3 style="${ST.h3}">Instructor Prompts and Interventions</h3>`;
-  if(ivs.length){
-    h+=`<table style="${ST.tbl}"><tr><th style="${ST.th};width:26%">Type</th><th style="${ST.th}">What was observed</th><th style="${ST.th};width:24%">Where on the route</th></tr>`+
-      ivs.map(r=>{
-        const m=INTERVENTIONS[r.type]||{label:r.type, fail:false};
-        return `<tr><td style="${ST.lbl}${m.fail?';color:#8c2f2f':''}">${esc(m.label)}</td><td style="${ST.td}">${paraSplit(r.what)}</td><td style="${ST.td}">${paraSplit(r.where)}</td></tr>`;
-      }).join('')+`</table>`;
-    const fails=failErrors();
-    if(fails.length) h+=P(`${fails.length===1?'One intervention was':fails.length+' interventions were'} required beyond a verbal prompt, involving ${joinList(fails.map(f=>(INTERVENTIONS[f.type]||{}).rep).filter(Boolean))}. ${fails.length===1?'This is':'These are'} reflected in the outcome and recommendations below.`);
-    else h+=P('The instructor prompted verbally as recorded above. No intervention using the dual controls was required at any point.');
-  } else {
-    h+=P('No prompt or intervention was required from the driving instructor at any point during the assessment.');
-  }
-  if(txt(S.safetyMgmt)) h+=`<p style="${ST.p}"><b>Safety management during the assessment:</b> ${paraSplit(S.safetyMgmt)}</p>`;
-  if(txt(S.fbOnRoad)) h+=`<h3 style="${ST.h3}">Feedback Provided to the Client</h3>`+P(S.fbOnRoad);
-  if(txt(S.legalInfo)) h+=P(S.legalInfo);
+  {id:'reviewed', label:'Reports reviewed', hlevel:'h2', heading:'Reports Reviewed', always:true,
+   hint:'What you read before the assessment.',
+   build:()=>{
+     const rev = REVIEWED_OPTS.filter(o=>S.reviewed[o.id]).map(o=>fill(o.text));
+     if(S.reviewedExtra) S.reviewedExtra.split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>rev.push(x));
+     return P(rev.length? 'The following were reviewed as part of this assessment: '+rev.join('; ')+'.' : '');
+   }},
 
-  /* summary + recs */
-  h+=`<h2 style="${ST.h2}">Summary and Recommendations</h2>`+P(S.summaryText);
-  const recsOn = REC_DEFS.filter(r=>S.recs[r.id]&&S.recs[r.id].on&&S.recs[r.id].text);
-  if(recsOn.length){
-    h+=`<p style="${ST.p}"><b>Recommendations:</b></p><ul style="margin:1mm 0 4mm;padding-left:6mm">`+
-      recsOn.map(r=>`<li style="margin-bottom:2mm">${paraSplit(S.recs[r.id].text)}</li>`).join('')+`</ul>`;
-  }
+  {id:'admin', label:'Who conducted the assessment', group:'gBackground', always:true,
+   hint:'Where the assessment was held and who administered it, including supervision and the driving instructor.',
+   build:()=>{
+     const sup=personOf('supervisor'), stu=personOf('student');
+     let admin=`This Occupational Therapy Driving Assessment was conducted at ${S.location||'[location]'}. The assessment was administered by ${S.assessor} (${S.assessorRole})`;
+     if(sup) admin+=`, under the clinical supervision of ${sup.name} (${sup.qual})`;
+     if(S.mdi) admin+=`. On-road instruction was provided by ${S.mdi} (Motor Driving Instructor)`;
+     admin+='.';
+     if(stu) admin+=` ${stu.full} ${stu.role.rep}.`;
+     return P(admin);
+   }},
 
-  /* basis of opinion, limitations, declaration */
-  h+=`<h2 style="${ST.h2}">Basis of Opinion, Limitations and Declaration</h2>`;
-  const qualBits=[txt(S.qualifications)];
-  if(sup) qualBits.push(`This assessment was completed under the clinical supervision of ${sup.name} (${sup.qual}).`);
-  if(txt(qualBits.join(' '))) h+=`<h3 style="${ST.h3}">Assessor Qualifications</h3>`+P(qualBits.filter(Boolean).join(' '));
-  if(S.limitations) h+=`<h3 style="${ST.h3}">Basis of Opinion and Limitations</h3>`+P(S.limitations);
-  if(S.declarationText) h+=`<h3 style="${ST.h3}">Declaration</h3>`+P(S.declarationText);
-  if(S.distribution) h+=`<p style="${ST.p}"><b>This report has been prepared for:</b> ${esc(S.distribution)}. It is confidential and should not be released to other parties without appropriate consent.</p>`;
+  {id:'referral', label:'Reason for referral', group:'gBackground', hlevel:'h3', heading:'Reason for Referral', always:true,
+   build:()=>P(S.reasonReferral)},
 
-  /* signature */
-  h+=`<p style="${ST.p};margin-top:8mm">Please do not hesitate to contact me should you wish to discuss any aspect of this report.</p>
+  {id:'consent', label:'Consent', group:'gBackground', hlevel:'h3', heading:'Consent',
+   hint:'Consent to the assessment and to the report being released. The student sentence is derived from the attendance toggle, so it cannot go missing.',
+   build:()=>{
+     const stu=personOf('student');
+     const bits=[txt(S.consentText)];
+     if(stu) bits.push(`{name} was advised that ${stu.full} would be present, and consented to their presence.`);
+     return txt(bits.join(' '))? P(bits.filter(Boolean).join(' ')) : '';
+   }},
+
+  {id:'symptoms', label:'Current symptoms & functional challenges', group:'gBackground', hlevel:'h3',
+   heading:'Current Symptoms and Functional Challenges',
+   build:()=>S.symptoms? P(S.symptoms) : ''},
+
+  {id:'medhistory', label:'Medical history', group:'gBackground', hlevel:'h3', heading:'Medical History',
+   build:()=>S.medHistory? P(S.medHistory) : ''},
+
+  {id:'treatment', label:'Treatment (medications table)', group:'gBackground', hlevel:'h3', heading:'Treatment',
+   build:()=>{
+     const meds=S.meds.filter(m=>m.name);
+     if(!meds.length) return '';
+     return `<table style="${ST.tbl}"><tr><th style="${ST.th}">Name</th><th style="${ST.th}">Dosage/Frequency</th><th style="${ST.th}">Purpose</th></tr>`+
+       meds.map(m=>`<tr><td style="${ST.td}">${esc(m.name)}</td><td style="${ST.td}">${esc(m.dose)}</td><td style="${ST.td}">${esc(m.purpose)}</td></tr>`).join('')+`</table>`+
+       P(S.medSideEffects);
+   }},
+
+  {id:'drivinghistory', label:'Driving history & current status', group:'gBackground', hlevel:'h3',
+   heading:'Driving History & Current Driving Status',
+   build:()=>{
+     let h=S.drivingHistory? P(S.drivingHistory) : '';
+     if(S.prevAssess) h+=P({none:'{name} has not previously undergone an occupational therapy driver assessment.',prior:'{name} has previously undergone an occupational therapy driver assessment; details are set out above.',unknown:'{name} was unable to confirm whether a previous occupational therapy driver assessment has been conducted.'}[S.prevAssess]);
+     return h;
+   }},
+
+  {id:'profile', label:'Occupational profile', group:'gBackground', hlevel:'h3', heading:'Occupational Profile',
+   build:()=>{
+     const profOn=PROFILE_DOMAINS.filter(d=>{const p=S.profile[d.id]; return p && !p.na && txt(p.text);});
+     if(!profOn.length) return '';
+     let h=`<table style="${ST.tbl}">`+profOn.map(d=>TR(d.label, S.profile[d.id].text)).join('')+`</table>`;
+     const naOn=PROFILE_DOMAINS.filter(d=>{const p=S.profile[d.id]; return p&&p.na&&txt(p.naWhy);});
+     if(naOn.length) h+=P('Not explored at this assessment: '+naOn.map(d=>d.label.toLowerCase()+' ('+txt(S.profile[d.id].naWhy)+')').join('; ')+'.');
+     return h;
+   }},
+
+  {id:'needs', label:'Driving needs', group:'gBackground', hlevel:'h3', heading:'Driving Needs', always:true,
+   build:()=>`<table style="${ST.tbl}"><tr><th style="${ST.th}">Driving conditions</th><th style="${ST.th}">Current needs</th></tr>`+
+     NEEDS_ROWS.map(r=>{const n=S.needs[r.id];return `<tr><td style="${ST.lbl}">${r.label}</td><td style="${ST.td}">${esc(n.val)}${n.note? (/^(Yes|No)$/.test(n.val)? ', ':' — ')+esc(n.note):''}</td></tr>`}).join('')+`</table>`},
+
+  {id:'hearing', label:'Hearing & communication screen', group:'gPreRoad', hlevel:'h3',
+   heading:'Hearing and Communication Screen', always:true,
+   build:()=>{
+     const hearTxt={wnl:`{name} was able to hear and respond to all questions asked during the assessment. No hearing difficulties were reported${S.supportPerson? ' by {name} or '+S.supportPerson:''}.`,
+       aids:`{name} wears hearing aids and was able to hear and respond to all questions asked during the assessment with aids in place.`,
+       issue:`Hearing difficulties were noted during the assessment.`}[S.hearing];
+     return P(hearTxt + (S.hearingNote? ' '+S.hearingNote:''));
+   }},
+
+  {id:'vision', label:'Visual screen', group:'gPreRoad', hlevel:'h3', heading:'Visual Screen', always:true,
+   build:()=>{
+     let h=`<table style="${ST.tbl}"><tr><td style="${ST.lbl}">Corrective lenses recommended for driving</td><td style="${ST.td}">${S.lenses}</td><td style="${ST.lbl}">Endorsed on licence</td><td style="${ST.td}">${S.lensesEndorsed}</td></tr></table>`;
+     if(S.vaUR||S.vaCR||S.vaUB||S.vaCB){
+       h+=`<table style="${ST.tbl}"><tr><th style="${ST.th}" colspan="4">Visual Acuity (Snellen's Eye Chart)${S.acuityBy? ' — completed by: '+esc(S.acuityBy):''}</th></tr>
+       <tr><td style="${ST.lbl}"></td><td style="${ST.lbl};width:auto;text-align:center">Right</td><td style="${ST.lbl};width:auto;text-align:center">Left</td><td style="${ST.lbl};width:auto;text-align:center">Binocular</td></tr>
+       <tr><td style="${ST.lbl}">Uncorrected</td><td style="${ST.td};text-align:center">${esc(S.vaUR)}</td><td style="${ST.td};text-align:center">${esc(S.vaUL)}</td><td style="${ST.td};text-align:center">${esc(S.vaUB)}</td></tr>
+       <tr><td style="${ST.lbl}">Corrected</td><td style="${ST.td};text-align:center">${esc(S.vaCR)}</td><td style="${ST.td};text-align:center">${esc(S.vaCL)}</td><td style="${ST.td};text-align:center">${esc(S.vaCB)}</td></tr></table>`;
+     }
+     const vf={full:'Confrontation testing indicated full visual fields across all quadrants.',deficit:'Confrontation testing identified a visual field deficit.',nt:''}[S.vFields];
+     const vm={wnl:'Binocular eye movements (smooth pursuits and saccades) were smooth and accurate, with no reported dizziness.',issue:'Issues were observed with binocular eye movements.',nt:''}[S.vMovements];
+     h+=P([vf,vm,fill(S.visionNotes)].filter(Boolean).join(' '));
+     h+=`<table style="${ST.tbl}"><tr><td style="${ST.lbl};width:70%">Meets Austroads Vision Standard</td><td style="${ST.td}">${S.austroadsVision}</td></tr>
+         <tr><td style="${ST.lbl};width:70%">Recommend assessment by Orthoptist, Ophthalmologist or Optometrist</td><td style="${ST.td}">${S.eyeReview}</td></tr></table>`;
+     return h;
+   }},
+
+  {id:'physical', label:'Physical abilities & restrictions', group:'gPreRoad', hlevel:'h3',
+   heading:'Physical Abilities & Restrictions', always:true,
+   build:()=>{
+     let h='';
+     /* a group heading prints when any of its lines did, even if the heading's own
+        cell is empty — otherwise the indented modalities have nothing to sit under */
+     const pRec=physFields().filter((r,i,all)=>{
+       if(physDone(r)) return true;
+       if(r.kind!=='head') return false;
+       for(let k=all.indexOf(r)+1;k<all.length && all[k].sub;k++) if(physDone(all[k])) return true;
+       return false;
+     });
+     if(txt(S.phys.hand.note)) h+=`<table style="${ST.tbl}">${TR('Hand dominance', S.phys.hand.note)}</table>`;
+     if(pRec.length){
+       /* the lead sentence names the areas from the row list, so it cannot go stale */
+       const areas=physRequired().filter(r=>!r.sub).map(r=>r.label.toLowerCase().replace(/\s*\(.*?\)/,''));
+       h+=P(`{name}'s physical skills were assessed including ${joinList(areas)}.`);
+       h+=`<table style="${ST.tbl}"><tr><th style="${ST.th};width:34%">Reported / observed physical abilities and restrictions</th><th style="${ST.th}">What was found</th></tr>`;
+       pRec.forEach(r=>{
+         const iss=physIssue(r);
+         h+=`<tr><td style="${ST.lbl}${r.sub?';padding-left:8mm;font-weight:400;font-style:italic':''}">${esc(r.label)}</td><td style="${ST.td}${iss?';color:#8c2f2f':''}">${paraSplit(physText(r))}</td></tr>`;
+       });
+       h+=`</table>`;
+       h+=`<p style="${ST.p};font-size:8pt;color:#8a8880">${esc(REFS.oxford)}<br>${esc(REFS.ashworth)}</p>`;
+     }
+     /* manual muscle testing */
+     const mTested=MUSCLES.filter(m=>S.muscles[m.id].tested==='yes'&&S.muscles[m.id].grade);
+     const mNot=MUSCLES.filter(m=>S.muscles[m.id].tested==='no');
+     const mNa=MUSCLES.filter(m=>S.muscles[m.id].tested==='na');
+     if(mTested.length){
+       h+=`<p style="${ST.p};font-size:9.5pt"><b>Manual muscle testing</b> — graded on the MRC (Oxford) 0–5 scale, where 5 indicates full range against full resistance.</p>`;
+       h+=`<table style="${ST.tbl}"><tr><th style="${ST.th};width:34%">Muscle group</th><th style="${ST.th};width:12%">Grade</th><th style="${ST.th}">Comment</th></tr>`;
+       let lg=null;
+       mTested.forEach(m=>{
+         if(m.g!==lg){ h+=`<tr><td colspan="3" style="${ST.grouprow}">${m.g}</td></tr>`; lg=m.g; }
+         const v=S.muscles[m.id];
+         h+=`<tr><td style="${ST.lbl}">${m.n}</td><td style="${v.grade==='5'?ST.ok:ST.td+';text-align:center;font-weight:700'}">${esc(v.grade)}</td><td style="${ST.td}">${esc(v.note)}</td></tr>`;
+       });
+       h+=`</table>`;
+     }
+     if(mNot.length) h+=P(`Manual muscle testing was not completed for the following groups: ${mNot.map(m=>m.n.toLowerCase()+(txt(S.muscles[m.id].note)? ' ('+txt(S.muscles[m.id].note)+')':'')).join('; ')}. No conclusion about strength in ${mNot.length>1?'these groups':'this group'} is drawn in this report.`);
+     if(mNa.length) h+=P(`Not applicable for this client: ${mNa.map(m=>m.n.toLowerCase()).join('; ')}.`);
+     if(S.physSummary) h+=`<p style="${ST.p}"><b>Summary of physical skills for driving:</b> ${paraSplit(S.physSummary)}</p>`;
+     return h;
+   }},
+
+  {id:'cognition', label:'Cognition / perception & test results', group:'gPreRoad', hlevel:'h3',
+   heading:'Cognition / Perception Abilities & Restrictions', always:true,
+   build:()=>{
+     let h=`<table style="${ST.tbl}"><tr><th style="${ST.th}">Test</th><th style="${ST.th}">Purpose</th><th style="${ST.th}">Score</th><th style="${ST.th}">Indicates</th></tr>`;
+     const testRow=(id)=>{
+       const t=S.tests[id]; if(!t.on) return '';
+       const m=TEST_META[id];
+       const r=m.interp();
+       const cm=testCommentList(id).map(x=>`<br><b>${esc(x.label)}.</b> ${paraSplit(x.text)}`).join('');
+       return `<tr><td style="${ST.td}"><b>${m.name}</b></td><td style="${ST.td}">${m.purpose}</td><td style="${ST.td}">${esc(r.scoreTxt||'')}</td><td style="${ST.td}">${paraSplit(r.txt+(t.note? ' '+t.note:''))}${cm}</td></tr>`;
+     };
+     h+= TEST_ORDER_HEAD.map(testRow).join('');
+     const comb=dsdaCombined();
+     if(comb) h+=`<tr><td colspan="4" style="${ST.td};background:#f4f8f9">${paraSplit(comb)}</td></tr>`;
+     h+= testOrderTail().map(testRow).join('');
+     if(S.genCog) h+=`<tr><td style="${ST.td}"><b>General Cognitive Skills</b></td><td colspan="3" style="${ST.td}">${paraSplit(S.genCog)}</td></tr>`;
+     if(txt(S.psychosocial)) h+=`<tr><td style="${ST.td}"><b>Psychosocial Skills</b></td><td colspan="3" style="${ST.td}">${paraSplit(S.psychosocial)}</td></tr>`;
+     h+=`</table>`;
+     if(S.cogSummary) h+=`<p style="${ST.p}"><b>Summary of cognitive skills for driving:</b> ${paraSplit(S.cogSummary)}</p>`;
+     return h;
+   }},
+
+  {id:'predrive', label:'Pre-drive outcome summary', group:'gPreRoad', hlevel:'h3', heading:'Pre-Drive Outcome Summary',
+   build:()=>{
+     const pdRows=preDriveIssues();
+     if(!pdRows.length) return '';
+     return `<table style="${ST.tbl}"><tr><th style="${ST.th};width:14%"></th><th style="${ST.th}">Issue</th><th style="${ST.th}">Possible impact on road</th><th style="${ST.th}">Considerations for the on-road assessment</th></tr>`+
+       pdRows.map(r=>`<tr><td style="${ST.lbl}">${esc(r.cat)}</td><td style="${ST.td}">${paraSplit(r.issue)}</td><td style="${ST.td}">${paraSplit(r.impact)}</td><td style="${ST.td}">${paraSplit(r.considerations)}</td></tr>`).join('')+`</table>`;
+   }},
+
+  {id:'offroadfb', label:'Feedback after the off-road assessment', group:'gPreRoad', hlevel:'h3',
+   heading:'Feedback Following the Off-Road Assessment',
+   build:()=>txt(S.fbOffRoad)? P(S.fbOffRoad) : ''},
+
+  {id:'suitability', label:'Suitability to proceed on road', group:'gPreRoad',
+   hint:'The sentence that carries the off-road findings into the drive.',
+   build:()=>S.onroadSuitable? P({yes:'On the basis of the off-road findings, {name} was considered suitable to proceed to the on-road assessment.',deferred:'The on-road assessment was deferred pending further information.',no:'The off-road findings precluded proceeding to an on-road assessment on this occasion.'}[S.onroadSuitable]+(txt(S.furtherInfo)&&!/^none/i.test(txt(S.furtherInfo))? ' '+fill(S.furtherInfo):'')) : ''},
+
+  {id:'drive', label:'The drive (route, vehicle, conditions)', group:'gOnRoad', always:true,
+   build:()=>{
+     let h=P(driveNarrative());
+     if(txt(S.mdiBrief)) h+=P('Prior to the on-road assessment the driving instructor was briefed on the relevant history, the planned route and the respective roles during the drive. '+fill(S.mdiBrief));
+     return h;
+   }},
+
+  {id:'results', label:'On-road results (performance checklist)', group:'gOnRoad', hlevel:'h3',
+   heading:'Assessment Results', always:true,
+   build:()=>{
+     let h=P('During the on-road assessment a number of driving behaviours were observed in the areas of observation, planning and judgment, vehicle positioning, speed control and physical control. Results are outlined below.');
+     CHECKLIST.forEach(g=>{
+       h+=`<p style="${ST.p};font-family:'Barlow Semi Condensed',Calibri,sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${BRAND.c1};margin:5mm 0 1mm">${esc(g.g)}</p>`;
+       /* The proforma's two checkbox columns. Not assessed and not yet rated both
+          leave the pair blank, as the proforma would — a not-assessed item carries
+          its reason in the further comments, and an unrated one cannot reach an
+          issued report because it is a hard export blocker. */
+       h+=`<table style="${ST.tbl}"><tr><th style="${ST.th}">Performance areas</th><th style="${ST.th};width:15%">Appropriate and safe</th><th style="${ST.th};width:19%">Issues observed<div style="font-weight:400;text-transform:none;letter-spacing:0">(see further comments for details)</div></th></tr>`+
+         g.items.map(it=>{
+           const c=S.checklist[it.id];
+           return `<tr><td style="${ST.td}">${it.text}</td>`+
+             `<td style="${ST.td};text-align:center;font-weight:700">${c.st==='safe'?'✓':''}</td>`+
+             `<td style="${ST.td};text-align:center;font-weight:700${c.st==='issue'?';color:#8c2f2f':''}">${c.st==='issue'?'✗':''}</td></tr>`;
+         }).join('')+`</table>`;
+       areaSafeProse(g).forEach(t=> h+=P(t));
+       const cmts=areaComments(g);
+       if(cmts.length) h+=`<p style="${ST.p}"><b>Further comments:</b> ${paraSplit(cmts.join('\n\n'))}</p>`;
+     });
+     return h;
+   }},
+
+  {id:'interventions', label:'Instructor prompts & interventions', group:'gOnRoad', hlevel:'h3',
+   heading:'Instructor Prompts and Interventions', always:true,
+   build:()=>{
+     let h='';
+     const ivs=interventionList();
+     if(ivs.length){
+       h+=`<table style="${ST.tbl}"><tr><th style="${ST.th};width:26%">Type</th><th style="${ST.th}">What was observed</th><th style="${ST.th};width:24%">Where on the route</th></tr>`+
+         ivs.map(r=>{
+           const m=INTERVENTIONS[r.type]||{label:r.type, fail:false};
+           return `<tr><td style="${ST.lbl}${m.fail?';color:#8c2f2f':''}">${esc(m.label)}</td><td style="${ST.td}">${paraSplit(r.what)}</td><td style="${ST.td}">${paraSplit(r.where)}</td></tr>`;
+         }).join('')+`</table>`;
+       const fails=failErrors();
+       if(fails.length) h+=P(`${fails.length===1?'One intervention was':fails.length+' interventions were'} required beyond a verbal prompt, involving ${joinList(fails.map(f=>(INTERVENTIONS[f.type]||{}).rep).filter(Boolean))}. ${fails.length===1?'This is':'These are'} reflected in the outcome and recommendations below.`);
+       else h+=P('The instructor prompted verbally as recorded above. No intervention using the dual controls was required at any point.');
+     } else {
+       h+=P('No prompt or intervention was required from the driving instructor at any point during the assessment.');
+     }
+     if(txt(S.safetyMgmt)) h+=`<p style="${ST.p}"><b>Safety management during the assessment:</b> ${paraSplit(S.safetyMgmt)}</p>`;
+     return h;
+   }},
+
+  {id:'onroadfb', label:'Feedback provided to the client', group:'gOnRoad', hlevel:'h3',
+   heading:'Feedback Provided to the Client',
+   build:()=>txt(S.fbOnRoad)? P(S.fbOnRoad) : ''},
+
+  {id:'legal', label:'Legal, licensing & insurance information given', group:'gOnRoad',
+   build:()=>txt(S.legalInfo)? P(S.legalInfo) : ''},
+
+  {id:'summary', label:'Summary paragraphs', group:'gSummary', always:true,
+   build:()=>P(S.summaryText)},
+
+  {id:'recs', label:'Recommendations list', group:'gSummary', always:true,
+   build:()=>{
+     const recsOn = REC_DEFS.filter(r=>S.recs[r.id]&&S.recs[r.id].on&&S.recs[r.id].text);
+     if(!recsOn.length) return '';
+     return `<p style="${ST.p}"><b>Recommendations:</b></p><ul style="margin:1mm 0 4mm;padding-left:6mm">`+
+       recsOn.map(r=>`<li style="margin-bottom:2mm">${paraSplit(S.recs[r.id].text)}</li>`).join('')+`</ul>`;
+   }},
+
+  {id:'qualifications', label:'Assessor qualifications', group:'gBasis', hlevel:'h3', heading:'Assessor Qualifications',
+   build:()=>{
+     const sup=personOf('supervisor');
+     const bits=[txt(S.qualifications)];
+     if(sup) bits.push(`This assessment was completed under the clinical supervision of ${sup.name} (${sup.qual}).`);
+     return txt(bits.join(' '))? P(bits.filter(Boolean).join(' ')) : '';
+   }},
+
+  {id:'limitations', label:'Basis of opinion & limitations', group:'gBasis', hlevel:'h3',
+   heading:'Basis of Opinion and Limitations',
+   build:()=>S.limitations? P(S.limitations) : ''},
+
+  {id:'declaration', label:'Declaration', group:'gBasis', hlevel:'h3', heading:'Declaration',
+   build:()=>S.declarationText? P(S.declarationText) : ''},
+
+  {id:'distribution', label:'Prepared for / distribution', group:'gBasis',
+   build:()=>S.distribution? `<p style="${ST.p}"><b>This report has been prepared for:</b> ${esc(S.distribution)}. It is confidential and should not be released to other parties without appropriate consent.</p>` : ''},
+
+  {id:'signature', label:'Sign-off & signature block', always:true,
+   hint:'The closing line, your name, role, AHPRA number and the signature date.',
+   build:()=>`<p style="${ST.p};margin-top:8mm">Please do not hesitate to contact me should you wish to discuss any aspect of this report.</p>
   <p style="${ST.p};margin-top:6mm">Kind regards,</p>
-  <p style="${ST.p};margin-top:5mm"><b>${esc(S.assessor)}</b><br>${esc(S.assessorRole)}${S.ahpra? '<br>AHPRA No. '+esc(S.ahpra):''}${brandName()? '<br>'+esc(brandName()):''}<br>Signed: ${esc(fmtDate(S.dateReport))||'____________'}</p>`;
+  <p style="${ST.p};margin-top:5mm"><b>${esc(S.assessor)}</b><br>${esc(S.assessorRole)}${S.ahpra? '<br>AHPRA No. '+esc(S.ahpra):''}${brandName()? '<br>'+esc(brandName()):''}<br>Signed: ${esc(fmtDate(S.dateReport))||'____________'}</p>`},
 
-  /* references */
-  const refs=[REFS.austroads, REFS.competency];
-  if(physFields().some(physDone)) refs.push(REFS.oxford, REFS.ashworth);
-  if(['driveSafe','driveSafePaper','driveAware','driveAware26'].some(k=>S.tests[k].on)){refs.push(REFS.dsda1,REFS.dsda2);}
-  if(S.tests.trailsB.on||S.tests.trailsA.on) refs.push(REFS.trails);
-  if(S.tests.maze.on||S.tests.intersection.on||S.tests.bells.on) refs.push(REFS.otdora);
-  if(S.tests.clock.on) refs.push(REFS.clock);
-  if(S.tests.snellgrove.on) refs.push(REFS.snellgrove);
-  if(S.tests.moca.on) refs.push(REFS.moca);
-  if(S.tests.ace.on) refs.push(REFS.ace);
-  if(S.tests.roadLaw.on) refs.push(REFS.roadlaw);
-  if(S.tests.rlst.on) refs.push(REFS.rlst);
-  if(S.refsExtra) S.refsExtra.split('\n').map(x=>x.trim()).filter(Boolean).forEach(x=>refs.push(x));
-  h+=`<h2 style="${ST.h2}">References</h2>`+refs.map(r=>`<p style="${ST.p};font-size:9pt;color:#55534e">${esc(r)}</p>`).join('');
+  {id:'references', label:'References', hlevel:'h2', heading:'References', always:true,
+   hint:'Built from the tests you included, plus anything you added in Section 7.',
+   build:()=>{
+     const refs=[REFS.austroads, REFS.competency];
+     if(physFields().some(physDone)) refs.push(REFS.oxford, REFS.ashworth);
+     if(['driveSafe','driveSafePaper','driveAware','driveAware26'].some(k=>S.tests[k].on)){refs.push(REFS.dsda1,REFS.dsda2);}
+     if(S.tests.trailsB.on||S.tests.trailsA.on) refs.push(REFS.trails);
+     if(S.tests.maze.on||S.tests.intersection.on||S.tests.bells.on) refs.push(REFS.otdora);
+     if(S.tests.clock.on) refs.push(REFS.clock);
+     if(S.tests.snellgrove.on) refs.push(REFS.snellgrove);
+     if(S.tests.moca.on) refs.push(REFS.moca);
+     if(S.tests.ace.on) refs.push(REFS.ace);
+     if(S.tests.roadLaw.on) refs.push(REFS.roadlaw);
+     if(S.tests.rlst.on) refs.push(REFS.rlst);
+     if(S.refsExtra) S.refsExtra.split('\n').map(x=>x.trim()).filter(Boolean).forEach(x=>refs.push(x));
+     return refs.map(r=>`<p style="${ST.p};font-size:9pt;color:#55534e">${esc(r)}</p>`).join('');
+   }},
 
-  /* end marker + footer strip */
-  h+=`<p style="text-align:center;font-family:'Barlow Semi Condensed',Calibri,sans-serif;font-weight:600;font-size:9pt;letter-spacing:.3em;color:#8a8880;margin:10mm 0 4mm">— END OF REPORT —</p>`;
-  h+=`<div style="border-top:1px solid #e6e4df;padding-top:2mm;font-family:'Barlow Semi Condensed',Calibri,sans-serif;font-size:7.5pt;letter-spacing:.08em;color:#8a8880">${esc([brandName(),BRAND.tagline].filter(x=>String(x||'').trim()).join(' · ').toUpperCase())}&nbsp;&nbsp;·&nbsp;&nbsp;${esc(footerID())}&nbsp;&nbsp;·&nbsp;&nbsp;CONFIDENTIAL</div>`;
+  {id:'endmatter', label:'End marker & footer strip', always:true,
+   build:()=>`<p style="text-align:center;font-family:'Barlow Semi Condensed',Calibri,sans-serif;font-weight:600;font-size:9pt;letter-spacing:.3em;color:#8a8880;margin:10mm 0 4mm">— END OF REPORT —</p>`+
+     `<div style="border-top:1px solid #e6e4df;padding-top:2mm;font-family:'Barlow Semi Condensed',Calibri,sans-serif;font-size:7.5pt;letter-spacing:.08em;color:#8a8880">${esc([brandName(),BRAND.tagline].filter(x=>String(x||'').trim()).join(' · ').toUpperCase())}&nbsp;&nbsp;·&nbsp;&nbsp;${esc(footerID())}&nbsp;&nbsp;·&nbsp;&nbsp;CONFIDENTIAL</div>`},
+];
+
+/* ---------- section plumbing ---------- */
+const SEC_LEVELS=[['h2','Major heading'],['h3','Sub-heading'],['none','No heading']];
+function secDefs(){
+  const m={}; REPORT_SECTIONS.forEach(s=>m[s.id]=s);
+  (S.secCustom||[]).forEach(c=>{
+    m[c.id]={id:c.id, custom:true, label:txt(c.title)||'Custom section',
+      hlevel:(c.level&&c.level!=='none')? c.level : null, heading:c.title, group:c.group||'',
+      always:true, build:()=>P(c.body)};
+  });
+  return m;
+}
+function secOrder(){
+  const custom=(S.secCustom||[]).map(c=>c.id);
+  return mergeOrder(S.secOrder, REPORT_SECTIONS.map(s=>s.id).concat(custom));
+}
+function secOn(id){ return !(S.secOff||{})[id]; }
+function secHeading(id){
+  const t=(S.secTitle||{})[id];
+  if(t!=null) return t;
+  const d=secDefs()[id];
+  return d? (d.heading||'') : '';
+}
+function secEdited(id){ return (S.secEdit||{})[id]!=null; }
+function secLabel(id){
+  if(String(id).indexOf('doc:')===0){ const d=DOCS.find(x=>docEditKey(x.id)===id); return d? d.file : id; }
+  const d=secDefs()[id]; return d? (d.label||d.id) : id;
+}
+function secEmpty(html){
+  const t=String(html||'');
+  if(/<(img|hr|td|th|li)\b/i.test(t)) return false;
+  return !txt(t.replace(/<[^>]+>/g,' '));
+}
+/* The rendered body of one section: a hand edit if there is one, otherwise the
+   heading (which stays renamable) followed by whatever the section builds. */
+function secHTML(id){
+  const d=secDefs()[id]; if(!d) return '';
+  const ov=(S.secEdit||{})[id];
+  if(ov!=null) return ov;
+  let b=''; try{ b=d.build()||''; }catch(e){ b=`<p style="${ST.p}"><i>This section could not be generated.</i></p>`; }
+  if(!d.always && secEmpty(b)) return '';
+  const head=secHeading(id);
+  /* `always` keeps the section — and any heading standing above it — on the
+     page whether or not it has anything in it yet, which is what makes an
+     unwritten summary visible as a gap rather than silently absent. */
+  const lv=d.hlevel;
+  return (lv&&ST[lv]&&txt(head)? `<${lv} style="${ST[lv]}">${esc(head)}</${lv}>` : '') + b;
+}
+/* Which sections will actually put something on the page — the group heading
+   above them depends on the answer, so it is worked out before anything prints. */
+function secRenderPlan(){
+  const out=[];
+  const defs=secDefs();
+  secOrder().forEach(id=>{
+    const d=defs[id]; if(!d || !secOn(id)) return;
+    const html=secHTML(id);
+    if(!html && !d.always) return;
+    out.push({id, html, group:d.group||''});
+  });
+  return out;
+}
+function buildReport(chrome){
+  const plan=secRenderPlan();
+  let h='', lastGroup=null;
+  plan.forEach((p,i)=>{
+    let lead='';
+    if(p.group!==lastGroup){
+      if(p.group && txt(groupTitle(p.group)))
+        lead=`<h2 style="${ST.h2}" data-secgroup="${p.group}">${esc(groupTitle(p.group))}</h2>`;
+      lastGroup=p.group;
+    }
+    h+= chrome? secChromeWrap(p.id, lead, p.html, i, plan.length) : `${lead}<section data-sec="${p.id}">${p.html}</section>`;
+  });
+  if(chrome) h+=hiddenSecStubs();
   return h;
+}
+
+/* ================================================================
+   EDITING THE REPORT IN PLACE
+   Turn edit mode on and every section in the preview becomes an
+   ordinary editable document: type into it, reformat it, move it,
+   take it out. A section you have typed into is marked as a hand
+   edit and stops regenerating from the form — until you reset it,
+   which puts the generated wording back.
+================================================================ */
+function att(x){ return esc(x).replace(/"/g,'&quot;'); }
+let editMode=false;
+function secChromeWrap(id, lead, html, i, n){
+  const d=secDefs()[id]||{};
+  const grp = lead? lead.replace('<h2 ','<h2 class="rsecgrp" contenteditable="true" spellcheck="false" ') : '';
+  const ed = secEdited(id);
+  const bar = `<div class="secchrome" contenteditable="false">
+      <span class="scname">${esc(secLabel(id))}</span>
+      ${ed? `<span class="scbadge">hand-edited</span>`:''}
+      <span class="scsp"></span>
+      <button type="button" title="Move up" onmousedown="event.preventDefault()" onclick="moveSec('${id}',-1)" ${i===0?'disabled':''}>↑</button>
+      <button type="button" title="Move down" onmousedown="event.preventDefault()" onclick="moveSec('${id}',1)" ${i===n-1?'disabled':''}>↓</button>
+      ${ed? `<button type="button" title="Undo the hand edits and go back to the generated wording" onmousedown="event.preventDefault()" onclick="resetSec('${id}')">Reset</button>`:''}
+      <button type="button" title="Take this section out of the report" onmousedown="event.preventDefault()" onclick="setSecOff('${id}',true)">Remove</button>
+    </div>`;
+  return `<div class="rsecwrap" data-sec="${id}">${grp}${bar}<section class="rsecbody" data-sec="${id}" contenteditable="true" spellcheck="true">${html}</section></div>`;
+}
+function hiddenSecStubs(){
+  const defs=secDefs();
+  const off=secOrder().filter(id=>!secOn(id)&&defs[id]);
+  if(!off.length) return '';
+  return `<div class="rsecghost" contenteditable="false"><b>Not in this report</b>`+
+    off.map(id=>`<button type="button" onclick="setSecOff('${id}',false)">${esc(secLabel(id))} <span>+ add back</span></button>`).join('')+
+    `</div>`;
+}
+function setEditMode(on){
+  editMode=!!on;
+  document.body.classList.toggle('editreport', editMode);
+  const b=document.getElementById('tbEdit');
+  if(b){ b.textContent = editMode? 'Done editing' : 'Edit report'; b.className = editMode? 'btn primary':'btn'; }
+  if(editMode && !previewOn()) togglePreview();
+  reportStale=true; paintReport();
+  if(editMode){ const pp=document.getElementById('previewPane'); if(pp) pp.scrollTop=0; }
+}
+function toggleEditMode(){ setEditMode(!editMode); }
+/* Saving on input is what marks a section as hand-edited — simply switching
+   edit mode on must not freeze every section against the form. */
+let secSaveTimer=null;
+function wireSecEditing(){
+  if(!editMode) return;
+  document.querySelectorAll('#reportRoot .rsecbody').forEach(el=>{
+    el.addEventListener('input',()=>{
+      const id=el.dataset.sec;
+      (S.secEdit=S.secEdit||{})[id]=el.innerHTML;
+      clearTimeout(secSaveTimer);
+      secSaveTimer=setTimeout(()=>{ autosave(); updateBadge(); buildLayoutPanel(); markChromeEdited(id); },400);
+    });
+  });
+  document.querySelectorAll('#reportRoot .rsecgrp').forEach(el=>{
+    el.addEventListener('input',()=>{
+      (S.secGroupTitle=S.secGroupTitle||{})[el.dataset.secgroup]=el.textContent;
+      clearTimeout(secSaveTimer);
+      secSaveTimer=setTimeout(()=>{ autosave(); buildLayoutPanel(); },400);
+    });
+  });
+}
+/* The chrome bar is inside the repainted markup, so it cannot be repainted
+   mid-keystroke without throwing away the caret — the badge is added in place. */
+function markChromeEdited(id){
+  const w=document.querySelector(`#reportRoot .rsecwrap[data-sec="${id}"] .secchrome`);
+  if(!w || w.querySelector('.scbadge')) return;
+  const b=document.createElement('span'); b.className='scbadge'; b.textContent='hand-edited';
+  w.querySelector('.scname').after(b);
+  const r=document.createElement('button');
+  r.type='button'; r.textContent='Reset'; r.title='Undo the hand edits and go back to the generated wording';
+  r.addEventListener('mousedown',e=>e.preventDefault());
+  r.addEventListener('click',()=>resetSec(id));
+  w.lastElementChild.before(r);
+}
+function fmt(cmd,arg){
+  try{ document.execCommand(cmd,false,arg||null); }catch(e){}
+  const sel=document.getSelection();
+  const node=sel&&sel.anchorNode? (sel.anchorNode.nodeType===1? sel.anchorNode : sel.anchorNode.parentElement) : null;
+  const body=node&&node.closest? node.closest('.rsecbody') : null;
+  if(body){ (S.secEdit=S.secEdit||{})[body.dataset.sec]=body.innerHTML; autosave(); buildLayoutPanel(); markChromeEdited(body.dataset.sec); }
+}
+
+/* ---------- section actions ---------- */
+function secOrderSaved(){ S.secOrder=secOrder(); return S.secOrder; }
+function moveSec(id,dir){
+  const o=secOrderSaved(); const i=o.indexOf(id); const j=i+dir;
+  if(i<0||j<0||j>=o.length) return;
+  o.splice(j,0,o.splice(i,1)[0]);
+  reportStale=true; syncPanelsAndRender();
+}
+function setSecOff(id,off){
+  (S.secOff=S.secOff||{})[id]=!!off;
+  if(!off) delete S.secOff[id];
+  reportStale=true; syncPanelsAndRender();
+}
+function toggleSec(id){ setSecOff(id, secOn(id)); }
+function resetSec(id){
+  if(S.secEdit) delete S.secEdit[id];
+  reportStale=true; syncPanelsAndRender();
+}
+function setSecTitle(id,v){
+  const d=secDefs()[id]||{};
+  (S.secTitle=S.secTitle||{})[id]=v;
+  if(d.custom){ const c=(S.secCustom||[]).find(x=>x.id===id); if(c){ c.title=v; delete S.secTitle[id]; } }
+  reportStale=true; if(previewOn()) paintReport(); autosave();
+}
+function setGroupTitle(g,v){ (S.secGroupTitle=S.secGroupTitle||{})[g]=v; reportStale=true; if(previewOn()) paintReport(); autosave(); }
+function setSecLevel(id,v){
+  const c=(S.secCustom||[]).find(x=>x.id===id); if(!c) return;
+  c.level=v; reportStale=true; syncPanelsAndRender();
+}
+function setSecBody(id,v){
+  const c=(S.secCustom||[]).find(x=>x.id===id); if(!c) return;
+  c.body=v; reportStale=true; if(previewOn()) paintReport(); autosave(); updateBadge();
+}
+function addCustomSec(after){
+  S.secCustom=S.secCustom||[];
+  let n=1; while(S.secCustom.some(c=>c.id==='cs'+n)) n++;
+  const id='cs'+n;
+  S.secCustom.push({id, title:'New section', body:'', level:'h2', group:''});
+  const o=secOrderSaved();
+  const at = after? o.indexOf(after)+1 : Math.max(0,o.indexOf('signature'));
+  o.splice(at<=0? o.length : at, 0, id);
+  reportStale=true; syncPanelsAndRender();
+  setTimeout(()=>{ const f=document.querySelector(`#layoutPanel [data-secfield="${id}"]`); if(f){ f.focus(); f.select(); } },30);
+  return id;
+}
+function delCustomSec(id){
+  if(!confirm('Delete this section and its text?')) return;
+  S.secCustom=(S.secCustom||[]).filter(c=>c.id!==id);
+  if(S.secOrder) S.secOrder=S.secOrder.filter(x=>x!==id);
+  if(S.secEdit) delete S.secEdit[id];
+  if(S.secOff) delete S.secOff[id];
+  reportStale=true; syncPanelsAndRender();
+}
+function clearSecEdits(){
+  const n=Object.keys(S.secEdit||{}).length;
+  if(!n) return;
+  if(!confirm(`Undo the hand edits in ${n} section${n>1?'s':''} and go back to the generated wording?`)) return;
+  S.secEdit={}; reportStale=true; syncPanelsAndRender();
+}
+function resetLayout(){
+  if(!confirm('Put every section back to its standard place, heading and visibility? Sections you added yourself are kept, and hand edits are not touched.')) return;
+  S.secOrder=[]; S.secOff={}; S.secTitle={}; S.secGroupTitle={};
+  reportStale=true; syncPanelsAndRender();
+}
+function syncPanelsAndRender(){ buildLayoutPanel(); render(); autosave(); }
+
+/* ---------- details-table fields ---------- */
+function rowOrderSaved(){ S.rowOrder=detailRowOrder(); return S.rowOrder; }
+function moveRow(id,dir){
+  const o=rowOrderSaved(); const i=o.indexOf(id); const j=i+dir;
+  if(i<0||j<0||j>=o.length) return;
+  o.splice(j,0,o.splice(i,1)[0]);
+  reportStale=true; syncPanelsAndRender();
+}
+function toggleRow(id){
+  (S.rowOff=S.rowOff||{})[id]=rowOn(id);
+  if(!S.rowOff[id]) delete S.rowOff[id];
+  reportStale=true; syncPanelsAndRender();
+}
+function setRowLabel(id,v){
+  const c=(S.rowCustom||[]).find(x=>x.id===id);
+  if(c) c.label=v; else (S.rowLabel=S.rowLabel||{})[id]=v;
+  reportStale=true; if(previewOn()) paintReport(); autosave();
+}
+function setRowValue(id,v){
+  const c=(S.rowCustom||[]).find(x=>x.id===id); if(!c) return;
+  c.value=v; reportStale=true; if(previewOn()) paintReport(); autosave();
+}
+function addCustomRow(){
+  S.rowCustom=S.rowCustom||[];
+  let n=1; while(S.rowCustom.some(c=>c.id==='cf'+n)) n++;
+  const id='cf'+n;
+  S.rowCustom.push({id, label:'', value:''});
+  rowOrderSaved().push(id);
+  reportStale=true; syncPanelsAndRender();
+  setTimeout(()=>{ const f=document.querySelector(`#layoutPanel [data-rowfield="${id}"]`); if(f) f.focus(); },30);
+}
+function delCustomRow(id){
+  S.rowCustom=(S.rowCustom||[]).filter(c=>c.id!==id);
+  if(S.rowOrder) S.rowOrder=S.rowOrder.filter(x=>x!==id);
+  if(S.rowOff) delete S.rowOff[id];
+  reportStale=true; syncPanelsAndRender();
+}
+
+/* ---------- the layout panel ---------- */
+function buildLayoutPanel(){
+  const el=document.getElementById('layoutPanel'); if(!el) return;
+  const defs=secDefs(), order=secOrder();
+  let lastGroup=null, rows='';
+  order.forEach((id,i)=>{
+    const d=defs[id]; if(!d) return;
+    const g=d.group||'';
+    if(g!==lastGroup){
+      lastGroup=g;
+      if(g) rows+=`<div class="lgrp"><label>Heading</label><input type="text" value="${att(groupTitle(g))}" placeholder="(no heading)" oninput="setGroupTitle('${g}',this.value)"></div>`;
+    }
+    const on=secOn(id), ed=secEdited(id), head=secHeading(id);
+    rows+=`<div class="lrow${on?'':' off'}">
+      <input type="checkbox" class="lchk" ${on?'checked':''} onchange="toggleSec('${id}')" title="${on?'Take out of the report':'Put back in the report'}">
+      <div class="lmain">
+        <div class="lname">${esc(d.label||id)}${d.custom?'<span class="ltag">yours</span>':''}${ed?'<span class="ltag ed">hand-edited</span>':''}</div>
+        ${d.hint? `<div class="lhint">${esc(d.hint)}</div>`:''}
+        ${(d.hlevel||d.custom)? `<input type="text" class="lhead" data-secfield="${id}" value="${att(head)}" placeholder="(no heading)" oninput="setSecTitle('${id}',this.value)" title="Heading text">`:''}
+        ${d.custom? `<select class="llevel" onchange="setSecLevel('${id}',this.value)">`+
+            SEC_LEVELS.map(([v,l])=>`<option value="${v}" ${((defs[id].hlevel||'none')===v)?'selected':''}>${l}</option>`).join('')+`</select>
+          <textarea class="lbody" rows="3" placeholder="Write this section…" oninput="setSecBody('${id}',this.value)">${esc(((S.secCustom||[]).find(c=>c.id===id)||{}).body||'')}</textarea>`:''}
+      </div>
+      <div class="lacts">
+        <button class="btn tiny" onclick="moveSec('${id}',-1)" ${i===0?'disabled':''} title="Move up">↑</button>
+        <button class="btn tiny" onclick="moveSec('${id}',1)" ${i===order.length-1?'disabled':''} title="Move down">↓</button>
+        ${ed? `<button class="btn tiny" onclick="resetSec('${id}')" title="Undo hand edits">↺</button>`:''}
+        ${d.custom? `<button class="btn tiny del" onclick="delCustomSec('${id}')" title="Delete this section">✕</button>`:''}
+      </div>
+    </div>`;
+    if(d.fields) rows+=detailFieldsPanel();
+  });
+  const docEd=docEditList();
+  if(docEd.length) rows+=`<div class="lfields"><div class="lfhead">Additional documents you have edited by hand</div>`+
+    docEd.map(d=>`<div class="lrow sub"><div class="lmain"><div class="lname">${esc(d.file)}<span class="ltag ed">hand-edited</span></div>
+      <div class="lhint">No longer follows the form. Open its tab above the preview to read it.</div></div>
+      <div class="lacts"><button class="btn tiny" onclick="resetSec('${docEditKey(d.id)}')" title="Undo hand edits">↺</button></div></div>`).join('')+`</div>`;
+  const nEd=Object.keys(S.secEdit||{}).length, nOff=order.filter(id=>!secOn(id)).length;
+  el.innerHTML = `<div class="lbar">
+      <button class="btn primary" onclick="toggleEditMode()">${editMode?'Done editing':'Edit the report directly'}</button>
+      <button class="btn" onclick="addCustomSec()">+ Add a section</button>
+      <button class="btn" onclick="resetLayout()">Reset layout</button>
+      ${nEd? `<button class="btn" onclick="clearSecEdits()">Undo all hand edits (${nEd})</button>`:''}
+      <span class="lcount">${order.length-nOff} of ${order.length} sections in the report${nEd? ' · '+nEd+' hand-edited':''}</span>
+    </div>
+    <div class="llist">${rows}</div>`;
+}
+function detailFieldsPanel(){
+  const defs=detailRowDefs();
+  const rows=detailRowOrder().map((id,i,arr)=>{
+    const r=defs[id]; if(!r) return '';
+    const on=rowOn(id);
+    return `<div class="lrow sub${on?'':' off'}">
+      <input type="checkbox" class="lchk" ${on?'checked':''} onchange="toggleRow('${id}')">
+      <div class="lmain">
+        <input type="text" class="lhead" data-rowfield="${id}" value="${att(rowLabel(id))}" placeholder="Field name" oninput="setRowLabel('${id}',this.value)">
+        ${r.custom? `<input type="text" class="lhead" value="${att(r.val()||'')}" placeholder="What it says" oninput="setRowValue('${id}',this.value)">`
+          : `<div class="lhint">from the form — ${esc(jtxt(String(r.val()??'')).slice(0,90)||'(empty)')}</div>`}
+      </div>
+      <div class="lacts">
+        <button class="btn tiny" onclick="moveRow('${id}',-1)" ${i===0?'disabled':''} title="Move up">↑</button>
+        <button class="btn tiny" onclick="moveRow('${id}',1)" ${i===arr.length-1?'disabled':''} title="Move down">↓</button>
+        ${r.custom? `<button class="btn tiny del" onclick="delCustomRow('${id}')" title="Delete this field">✕</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="lfields"><div class="lfhead">Lines in the details table — rename, reorder, hide, or add your own</div>${rows}
+    <div class="lrow sub add"><button class="btn tiny" onclick="addCustomRow()">+ Add a field</button></div></div>`;
 }
 /* ================================================================
    ADDITIONAL DOCUMENTS
@@ -3694,11 +4295,23 @@ function familySummary(){
   return h;
 }
 
-function buildActiveDoc(){
+function buildActiveDoc(chrome){
   const d=DOCS.find(x=>x.id===S.activeDoc);
-  if(!d || !docOn(d.id)) { S.activeDoc='report'; return buildReport(); }
-  return d.build();
+  if(!d || !docOn(d.id)) { S.activeDoc='report'; return buildReport(chrome); }
+  /* An additional document is short enough to edit as one piece: there is
+     nothing in it to reorder, so it gets the same hand-edit and reset as a
+     section does, under one key. */
+  const key=docEditKey(d.id), ov=(S.secEdit||{})[key];
+  const html = ov!=null? ov : d.build();
+  if(!chrome) return html;
+  return `<div class="rsecwrap" data-sec="${key}"><div class="secchrome" contenteditable="false">
+      <span class="scname">${esc(d.file)}</span>${ov!=null? '<span class="scbadge">hand-edited</span>':''}
+      <span class="scsp"></span>
+      ${ov!=null? `<button type="button" title="Undo the hand edits and go back to the generated wording" onmousedown="event.preventDefault()" onclick="resetSec('${key}')">Reset</button>`:''}
+    </div><section class="rsecbody" data-sec="${key}" contenteditable="true" spellcheck="true">${html}</section></div>`;
 }
+function docEditKey(id){ return 'doc:'+id; }
+function docEditList(){ return DOCS.filter(d=>(S.secEdit||{})[docEditKey(d.id)]!=null); }
 function activeDocLabel(){
   const d=DOCS.find(x=>x.id===S.activeDoc);
   return d? d.file : 'Driving Assessment Report';
@@ -3756,8 +4369,9 @@ const PV_KEY='otdrb-preview';
 let reportStale=true;
 function previewOn(){ return !document.body.classList.contains('preview-hidden'); }
 function paintReport(){
-  document.getElementById('reportRoot').innerHTML = `<div class="page">${buildActiveDoc()}</div>`;
+  document.getElementById('reportRoot').innerHTML = `<div class="page">${buildActiveDoc(editMode)}</div>`;
   buildDocTabs();
+  wireSecEditing();
   reportStale=false;
 }
 /* When the pane is hidden the report is not rebuilt on every keystroke — it is
@@ -3765,6 +4379,7 @@ function paintReport(){
 function ensureReport(){ if(reportStale) paintReport(); }
 function togglePreview(){
   const show=!previewOn();
+  if(!show && editMode) setEditMode(false);
   document.body.classList.toggle('preview-hidden',!show);
   try{ localStorage.setItem(PV_KEY, show?'1':'0'); }catch(e){}
   if(show){ ensureReport(); const pp=document.getElementById('previewPane'); if(pp) pp.scrollTop=0; }
@@ -3790,7 +4405,7 @@ function initPreview(){
 }
 function toggleMore(){ document.body.classList.toggle('more-open'); }
 function tbGo(fn){ document.body.classList.remove('more-open'); fn(); }
-function doPrint(){ ensureReport(); window.print(); }
+function doPrint(){ if(editMode) setEditMode(false); ensureReport(); window.print(); }
 
 function render(){
   if(previewOn()) paintReport(); else reportStale=true;
@@ -3831,7 +4446,7 @@ function syncForm(){
   document.querySelectorAll('[data-bindchk]').forEach(el=>{ el.checked = (S[el.dataset.bindchk]||[]).includes(el.value); });
   document.querySelectorAll('[data-bindbool]').forEach(el=>{ el.checked = !!S[el.dataset.bindbool]; });
   buildMedRows(); buildReviewed(); buildNeeds(); buildPhys(); buildTests(); buildChecklist(); buildRecs();
-  buildProfile(); buildMuscles(); buildPreDrive(); buildInterventions(); buildAttendees(); buildComp(); buildSignoff(); buildDocsPanel(); buildDocTabs();
+  buildProfile(); buildMuscles(); buildPreDrive(); buildInterventions(); buildAttendees(); buildComp(); buildSignoff(); buildDocsPanel(); buildDocTabs(); buildLayoutPanel();
   refreshPanels();
 }
 function refreshPanels(){
@@ -3850,6 +4465,14 @@ function normalise(raw){
      nothing reads. */
   ['notes','notesLocked','notesLockedAt','notesRecordedBy','equip','equipAt','equipWhy','aiUse','vehicle','ackAdvisories','admin'].forEach(k=>delete s[k]);
   Object.keys(s.checklist||{}).forEach(k=>{ if(s.checklist[k]) delete s.checklist[k].refs; });
+  ['secOff','secTitle','secGroupTitle','secEdit','rowOff','rowLabel'].forEach(k=>{
+    if(!s[k] || typeof s[k]!=='object' || Array.isArray(s[k])) s[k]={};
+  });
+  ['secOrder','rowOrder'].forEach(k=>{ s[k]=Array.isArray(s[k])? s[k].filter(x=>typeof x==='string'):[]; });
+  s.secCustom=(Array.isArray(s.secCustom)? s.secCustom:[]).filter(c=>c&&c.id)
+    .map(c=>({id:String(c.id), title:String(c.title??''), body:String(c.body??''), level:c.level||'h2', group:''}));
+  s.rowCustom=(Array.isArray(s.rowCustom)? s.rowCustom:[]).filter(c=>c&&c.id)
+    .map(c=>({id:String(c.id), label:String(c.label??''), value:String(c.value??'')}));
   ['verify','compManual','muscles','profile','phys','needs','checklist','clComments','tests','docs','docMeta'].forEach(k=>{
     s[k]=Object.assign({}, base[k], raw&&raw[k]? raw[k]:{});
   });
@@ -4236,11 +4859,31 @@ function assessmentJSON(){
         standards:COMPETENCIES.map(c=>({id:c.id, standard:jtxt(c.t), status:COMP_STATUS[compStatus(c)]||''})),
       },
     },
+    reportLayout:reportLayoutJSON(),
     outstandingChecks:validate().map(m=>({section:jtxt(m.sec), item:jprose(m.label), why:jprose(m.why)})),
   };
   return jprune(j)||{};
 }
 
+/* Only speaks up when the report was actually changed from the standard one —
+   a reader of this file should be able to assume the default shape otherwise. */
+function reportLayoutJSON(){
+  const defaultOrder=mergeOrder([], REPORT_SECTIONS.map(x=>x.id).concat((S.secCustom||[]).map(c=>c.id)));
+  const j={
+    sectionsOmitted:secOrder().filter(id=>!secOn(id)).map(id=>jtxt(secLabel(id))),
+    sectionsEditedByHand:Object.keys(S.secEdit||{}).filter(id=>secDefs()[id]).map(id=>jtxt(secLabel(id))),
+    sectionsAddedByAssessor:(S.secCustom||[]).map(c=>({heading:jtxt(c.title), text:jprose(c.body)})),
+    documentsEditedByHand:docEditList().map(d=>jtxt(d.file)),
+    detailFieldsOmitted:detailRowOrder().filter(id=>!rowOn(id)).map(id=>jtxt(rowLabel(id))),
+    detailFieldsAddedByAssessor:(S.rowCustom||[]).map(c=>({field:jtxt(c.label), value:jtxt(c.value)})),
+    headingsRenamed:Object.keys(S.secTitle||{}).filter(id=>secDefs()[id]).map(id=>({section:jtxt(secLabel(id)), heading:jtxt(S.secTitle[id])}))
+      .concat(SEC_GROUPS.filter(g=>(S.secGroupTitle||{})[g.id]!=null&&S.secGroupTitle[g.id]!==g.label).map(g=>({section:jtxt(g.label), heading:jtxt(groupTitle(g.id))}))),
+    sectionsInOrder:JSON.stringify(secOrder())===JSON.stringify(defaultOrder)? [] : secRenderPlan().map(x=>jtxt(secLabel(x.id))),
+  };
+  if(!Object.keys(j).some(k=>j[k].length)) return '';
+  j.note='Everything below is a departure from the report this builder ships; anything not listed is the standard wording, in its standard place.';
+  return j;
+}
 function assessmentJSONText(){ return JSON.stringify(assessmentJSON(),null,2); }
 
 function showAssessmentJSON(){
@@ -4659,6 +5302,26 @@ function validate(){
   COMPETENCIES.filter(c=>c.hard).forEach(c=>{ if(compStatus(c)==='miss') C('Competency '+c.id+' not evidenced','“'+c.t+'” — this is a documentation standard the report itself has to satisfy.','9','#compRows'); });
   COMPETENCIES.forEach(c=>{ if(compStatus(c)==='man') C('Competency '+c.id+' awaiting confirmation','“'+c.t+'” — confirm in Section 9 that you did this.','9','#compRows'); });
   if(!S.selfReview) C('Confirm you have read the report end to end','The final check in Section 8.','8','#signoffPanel');
+  /* ---- 12. the shape of the report itself ---- */
+  const offSecs=secOrder().filter(id=>!secOn(id));
+  if(offSecs.length) C(offSecs.length+' section'+(offSecs.length>1?'s are':' is')+' switched off',
+    'Not in the report as it will go out: '+offSecs.map(secLabel).join('; ')+'. Deliberate is fine — this is here so it is never a surprise on the day.','✎','#layoutPanel');
+  docEditList().forEach(d=>{
+    if(!docOn(d.id)) return;
+    C(d.label+' has been edited by hand','It no longer follows the form, so a change you make now will not reach it. Read it before you export, or reset it to the generated wording.','✎','#layoutPanel');
+  });
+  const handEdited=Object.keys(S.secEdit||{}).filter(id=>secDefs()[id]);
+  if(handEdited.length) C(handEdited.length+' section'+(handEdited.length>1?'s have':' has')+' been edited by hand',
+    'These no longer follow the form: '+handEdited.map(secLabel).join('; ')+'. Read them against your entries before you export, or reset them to the generated wording.','✎','#layoutPanel');
+  (S.secCustom||[]).forEach(c=>{
+    if((S.secEdit||{})[c.id]!=null || !secOn(c.id)) return;
+    if(!txt(c.body)) C('Your section “'+(txt(c.title)||'untitled')+'” is empty','Write it, delete it, or switch it off — an empty heading still prints.','✎','#layoutPanel');
+  });
+  (S.rowCustom||[]).forEach(c=>{
+    if(!rowOn(c.id)) return;
+    if(txt(c.value) && !txt(c.label)) C('A field you added has no name','It prints with an empty label in the details table.','✎','#layoutPanel');
+  });
+
   DOCS.forEach(d=>{
     if(!docOn(d.id)) return;
     const miss=d.needs();
@@ -4683,6 +5346,10 @@ function updateBadge(){
   const n5=document.getElementById('n5'); if(n5){
     const all=CHECKLIST.flatMap(g=>g.items);
     n5.textContent=`${all.filter(it=>S.checklist[it.id].st!=='unrated').length}/${all.length} items rated`;
+  }
+  const nL=document.getElementById('nL'); if(nL){
+    const order=secOrder(), off=order.filter(id=>!secOn(id)).length, ed=Object.keys(S.secEdit||{}).length;
+    nL.textContent = `${order.length-off}/${order.length} sections`+(ed? ` · ${ed} hand-edited`:'');
   }
   const n9=document.getElementById('n9'); if(n9){ const st=COMPETENCIES.map(compStatus); n9.textContent=`competencies ${st.filter(x=>x==='met'||x==='manok').length}/${st.filter(x=>x!=='nap').length}`; }
   syncStageNav(v);
@@ -4711,7 +5378,7 @@ const STAGES = [
   {n:1, label:'Initial Interview', short:'Interview', sub:'Background & set-up',        secs:['⚙','1','2','3']},
   {n:2, label:'Off-Road Assessment', short:'Off-road', sub:'Screens & standardised tests', secs:['4']},
   {n:3, label:'On-Road Assessment',  short:'On-road',  sub:'The drive',                 secs:['5']},
-  {n:4, label:'Feedback & Finalising', short:'Finalise', sub:'Summary, sign-off, export', secs:['6','7','8','9']},
+  {n:4, label:'Feedback & Finalising', short:'Finalise', sub:'Summary, sign-off, export', secs:['6','✎','7','8','9']},
 ];
 const STAGE_OF={}; STAGES.forEach(s=>s.secs.forEach(x=>STAGE_OF[x]=s.n));
 const STAGE_KEY='otdrb-stage';
