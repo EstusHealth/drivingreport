@@ -416,6 +416,7 @@ body.preview-hidden #formPane{width:100%;border-right:none}
 .lname{font-weight:600;font-size:13px;line-height:1.3}
 .ltag{display:inline-block;margin-left:6px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--faint);border-radius:3px;padding:1px 5px;vertical-align:1px}
 .ltag.ed{background:var(--plum)}
+.lhint.pinned{color:#8c2f2f}
 .lhint{font-size:11px;color:var(--faint);line-height:1.4;margin-top:2px}
 .lhead{width:100%;margin-top:5px;border:1px solid #d6d4cf;border-radius:4px;padding:4px 7px;font-size:12.5px;font-family:'Barlow',sans-serif}
 .lhead:focus{outline:2px solid var(--teal);outline-offset:-1px}
@@ -1906,7 +1907,7 @@ function freshState(){
        means "exactly as the builder ships", so a draft that never touched
        the layout picks up every later change to the standard report. */
     secOrder:[], secOff:{}, secTitle:{}, secGroupTitle:{}, secEdit:{}, secBase:{}, secCustom:[],
-    rowOrder:[], rowOff:{}, rowLabel:{}, rowCustom:[],
+    rowOrder:[], rowOff:{}, rowLabel:{}, rowEdit:{}, rowCustom:[],
   };
   PHYS_ROWS.forEach(r=> s.phys[r.id]={note:'', issue:false, v1:'', v2:'', v3:'', v4:''});
   MUSCLES.forEach(m=> s.muscles[m.id]={tested:'no', grade:'', note:''});
@@ -3384,10 +3385,14 @@ function detailTable(){
   const rows=detailRowOrder().map(id=>{
     const r=defs[id]; if(!r || !rowOn(id)) return '';
     let v=''; try{ v=String(r.val()??''); }catch(e){ v=''; }
+    const ov=(S.rowEdit||{})[id];
     /* the standard lines print even when empty, as the proforma does — a line
        you added yourself only earns its row once it says something */
-    if(r.hideIfEmpty && !txt(v)) return '';
-    return TR(esc(rowLabel(id)), v);
+    if(r.hideIfEmpty && !txt(v) && ov==null) return '';
+    /* A cell written over by hand pins that cell alone. Every other line in the
+       table goes on following the form, so changing a date still reaches it. */
+    const cell = ov!=null? ov : paraSplit(v);
+    return `<tr data-row="${att(id)}"><td style="${ST.lbl}">${esc(rowLabel(id))}</td><td style="${ST.td}">${cell}</td></tr>`;
   }).filter(Boolean).join('');
   return rows? `<table style="${ST.tbl}">${rows}</table>` : '';
 }
@@ -3428,7 +3433,7 @@ const REPORT_SECTIONS = [
    }},
 
   {id:'referral', label:'Reason for referral', group:'gBackground', hlevel:'h3', heading:'Reason for Referral', always:true,
-   build:()=>P(S.reasonReferral)},
+   field:'reasonReferral', build:()=>P(S.reasonReferral)},
 
   {id:'consent', label:'Consent', group:'gBackground', hlevel:'h3', heading:'Consent',
    hint:'Consent to the assessment and to the report being released. The student sentence is derived from the attendance toggle, so it cannot go missing.',
@@ -3441,10 +3446,10 @@ const REPORT_SECTIONS = [
 
   {id:'symptoms', label:'Current symptoms & functional challenges', group:'gBackground', hlevel:'h3',
    heading:'Current Symptoms and Functional Challenges',
-   build:()=>S.symptoms? P(S.symptoms) : ''},
+   field:'symptoms', build:()=>S.symptoms? P(S.symptoms) : ''},
 
   {id:'medhistory', label:'Medical history', group:'gBackground', hlevel:'h3', heading:'Medical History',
-   build:()=>S.medHistory? P(S.medHistory) : ''},
+   field:'medHistory', build:()=>S.medHistory? P(S.medHistory) : ''},
 
   {id:'treatment', label:'Treatment (medications table)', group:'gBackground', hlevel:'h3', heading:'Treatment',
    build:()=>{
@@ -3581,7 +3586,7 @@ const REPORT_SECTIONS = [
 
   {id:'offroadfb', label:'Feedback after the off-road assessment', group:'gPreRoad', hlevel:'h3',
    heading:'Feedback Following the Off-Road Assessment',
-   build:()=>txt(S.fbOffRoad)? P(S.fbOffRoad) : ''},
+   field:'fbOffRoad', build:()=>txt(S.fbOffRoad)? P(S.fbOffRoad) : ''},
 
   {id:'suitability', label:'Suitability to proceed on road', group:'gPreRoad',
    hint:'The sentence that carries the off-road findings into the drive.',
@@ -3641,13 +3646,13 @@ const REPORT_SECTIONS = [
 
   {id:'onroadfb', label:'Feedback provided to the client', group:'gOnRoad', hlevel:'h3',
    heading:'Feedback Provided to the Client',
-   build:()=>txt(S.fbOnRoad)? P(S.fbOnRoad) : ''},
+   field:'fbOnRoad', build:()=>txt(S.fbOnRoad)? P(S.fbOnRoad) : ''},
 
   {id:'legal', label:'Legal, licensing & insurance information given', group:'gOnRoad',
-   build:()=>txt(S.legalInfo)? P(S.legalInfo) : ''},
+   field:'legalInfo', build:()=>txt(S.legalInfo)? P(S.legalInfo) : ''},
 
   {id:'summary', label:'Summary paragraphs', group:'gSummary', always:true,
-   build:()=>P(S.summaryText)},
+   field:'summaryText', build:()=>P(S.summaryText)},
 
   {id:'recs', label:'Recommendations list', group:'gSummary', always:true,
    build:()=>{
@@ -3667,10 +3672,10 @@ const REPORT_SECTIONS = [
 
   {id:'limitations', label:'Basis of opinion & limitations', group:'gBasis', hlevel:'h3',
    heading:'Basis of Opinion and Limitations',
-   build:()=>S.limitations? P(S.limitations) : ''},
+   field:'limitations', build:()=>S.limitations? P(S.limitations) : ''},
 
   {id:'declaration', label:'Declaration', group:'gBasis', hlevel:'h3', heading:'Declaration',
-   build:()=>S.declarationText? P(S.declarationText) : ''},
+   field:'declarationText', build:()=>S.declarationText? P(S.declarationText) : ''},
 
   {id:'distribution', label:'Prepared for / distribution', group:'gBasis',
    build:()=>S.distribution? `<p style="${ST.p}"><b>This report has been prepared for:</b> ${esc(S.distribution)}. It is confidential and should not be released to other parties without appropriate consent.</p>` : ''},
@@ -3851,21 +3856,59 @@ function secStale(key){
 }
 function staleSecs(){ return Object.keys(S.secEdit||{}).filter(k=>secStale(k)===true); }
 function unknownAgeSecs(){ return Object.keys(S.secEdit||{}).filter(k=>secStale(k)===null); }
+/* Turning rendered markup back into the plain text a form field holds. */
+function htmlToText(h){
+  const d=document.createElement('div');
+  d.innerHTML=String(h||'').replace(/<\/p\s*>\s*<p[^>]*>/gi,'\n\n').replace(/<br\s*\/?>/gi,'\n');
+  return (d.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').trim();
+}
+/* A section that is nothing but one form field is not frozen when it is edited
+   in the report — the words go back to the field they came from, so the form and
+   the report say the same thing and both stay live. */
+function absorbFieldSection(el,id,field){
+  const ps=[...el.querySelectorAll('p')];
+  const text = ps.length? ps.map(x=>htmlToText(x.innerHTML)).join('\n\n').trim() : htmlToText(el.innerHTML);
+  if(S[field]!==text){
+    S[field]=text;
+    const inp=document.querySelector(`[data-bind="${field}"]`);
+    if(inp && inp.value!==text) inp.value=text;
+  }
+  const h=el.querySelector('h1,h2,h3');
+  if(h){ const t=h.textContent.trim(); if(t!==secHeading(id)) (S.secTitle=S.secTitle||{})[id]=t; }
+}
+/* The details table is one line per field, so an edit pins the line it was made
+   on and nothing else. A line typed back to what the form says is unpinned again. */
+function absorbDetailEdits(el){
+  const defs=detailRowDefs();
+  el.querySelectorAll('tr[data-row]').forEach(tr=>{
+    const id=tr.dataset.row, r=defs[id]; if(!r) return;
+    const lab=tr.children[0], cell=tr.children[1]; if(!cell) return;
+    let v=''; try{ v=String(r.val()??''); }catch(e){ v=''; }
+    if(markupKey(cell.innerHTML)===markupKey(paraSplit(v))){ if(S.rowEdit) delete S.rowEdit[id]; }
+    else (S.rowEdit=S.rowEdit||{})[id]=cell.innerHTML;
+    if(lab){ const t=lab.textContent.trim(); if(t!==rowLabel(id)) (S.rowLabel=S.rowLabel||{})[id]=t; }
+  });
+}
 let secSaveTimer=null;
 function wireSecEditing(){
   if(!editMode) return;
   document.querySelectorAll('#reportRoot .rsecbody').forEach(el=>{
     el.addEventListener('input',()=>{
       const id=el.dataset.sec;
-      const now=el.innerHTML, gen=secGeneratedFor(id);
-      /* Typed and undone, or an input event the browser raised without a change:
-         leave the section following the form rather than freezing it by accident. */
-      if(markupKey(now)===markupKey(gen)){
-        if(S.secEdit) delete S.secEdit[id];
-        if(S.secBase) delete S.secBase[id];
-      }else{
-        (S.secEdit=S.secEdit||{})[id]=now;
-        (S.secBase=S.secBase||{})[id]=gen;
+      const def=secDefs()[id]||{};
+      if(def.field){ absorbFieldSection(el,id,def.field); }
+      else if(def.fields){ absorbDetailEdits(el); }
+      else {
+        const now=el.innerHTML, gen=secGeneratedFor(id);
+        /* Typed and undone, or an input event the browser raised without a change:
+           leave the section following the form rather than freezing it by accident. */
+        if(markupKey(now)===markupKey(gen)){
+          if(S.secEdit) delete S.secEdit[id];
+          if(S.secBase) delete S.secBase[id];
+        }else{
+          (S.secEdit=S.secEdit||{})[id]=now;
+          (S.secBase=S.secBase||{})[id]=gen;
+        }
       }
       clearTimeout(secSaveTimer);
       secSaveTimer=setTimeout(()=>{ autosave(); updateBadge(); buildLayoutPanel(); markChromeEdited(id); },400);
@@ -3917,6 +3960,7 @@ function toggleSec(id){ setSecOff(id, secOn(id)); }
 function resetSec(id){
   if(S.secEdit) delete S.secEdit[id];
   if(S.secBase) delete S.secBase[id];
+  if(secDefs()[id]&&secDefs()[id].fields) S.rowEdit={};
   reportStale=true; syncPanelsAndRender();
 }
 function setSecTitle(id,v){
@@ -3959,7 +4003,7 @@ function clearSecEdits(){
   const n=Object.keys(S.secEdit||{}).length;
   if(!n) return;
   if(!confirm(`Undo the hand edits in ${n} section${n>1?'s':''} and go back to the generated wording?`)) return;
-  S.secEdit={}; S.secBase={}; reportStale=true; syncPanelsAndRender();
+  S.secEdit={}; S.secBase={}; S.rowEdit={}; reportStale=true; syncPanelsAndRender();
 }
 function resetLayout(){
   if(!confirm('Put every section back to its standard place, heading and visibility? Sections you added yourself are kept, and hand edits are not touched.')) return;
@@ -3969,6 +4013,8 @@ function resetLayout(){
 function syncPanelsAndRender(){ buildLayoutPanel(); render(); autosave(); }
 
 /* ---------- details-table fields ---------- */
+function rowPinned(id){ return (S.rowEdit||{})[id]!=null; }
+function resetRow(id){ if(S.rowEdit) delete S.rowEdit[id]; reportStale=true; syncPanelsAndRender(); }
 function rowOrderSaved(){ S.rowOrder=detailRowOrder(); return S.rowOrder; }
 function moveRow(id,dir){
   const o=rowOrderSaved(); const i=o.indexOf(id); const j=i+dir;
@@ -4063,11 +4109,13 @@ function detailFieldsPanel(){
       <div class="lmain">
         <input type="text" class="lhead" data-rowfield="${id}" value="${att(rowLabel(id))}" placeholder="Field name" oninput="setRowLabel('${id}',this.value)">
         ${r.custom? `<input type="text" class="lhead" value="${att(r.val()||'')}" placeholder="What it says" oninput="setRowValue('${id}',this.value)">`
+          : rowPinned(id)? `<div class="lhint pinned">written over by hand — prints “${esc(jtxt(String((S.rowEdit||{})[id])).slice(0,60))}”, not the form's “${esc(jtxt(String(r.val()??'')).slice(0,60)||'(empty)')}”</div>`
           : `<div class="lhint">from the form — ${esc(jtxt(String(r.val()??'')).slice(0,90)||'(empty)')}</div>`}
       </div>
       <div class="lacts">
         <button class="btn tiny" onclick="moveRow('${id}',-1)" ${i===0?'disabled':''} title="Move up">↑</button>
         <button class="btn tiny" onclick="moveRow('${id}',1)" ${i===arr.length-1?'disabled':''} title="Move down">↓</button>
+        ${rowPinned(id)? `<button class="btn tiny" onclick="resetRow('${id}')" title="Go back to the form's wording">↺</button>`:''}
         ${r.custom? `<button class="btn tiny del" onclick="delCustomRow('${id}')" title="Delete this field">✕</button>`:''}
       </div>
     </div>`;
@@ -4536,7 +4584,7 @@ function normalise(raw){
      nothing reads. */
   ['notes','notesLocked','notesLockedAt','notesRecordedBy','equip','equipAt','equipWhy','aiUse','vehicle','ackAdvisories','admin'].forEach(k=>delete s[k]);
   Object.keys(s.checklist||{}).forEach(k=>{ if(s.checklist[k]) delete s.checklist[k].refs; });
-  ['secOff','secTitle','secGroupTitle','secEdit','secBase','rowOff','rowLabel'].forEach(k=>{
+  ['secOff','secTitle','secGroupTitle','secEdit','secBase','rowOff','rowLabel','rowEdit'].forEach(k=>{
     if(!s[k] || typeof s[k]!=='object' || Array.isArray(s[k])) s[k]={};
   });
   ['secOrder','rowOrder'].forEach(k=>{ s[k]=Array.isArray(s[k])? s[k].filter(x=>typeof x==='string'):[]; });
@@ -5385,6 +5433,9 @@ function validate(){
   if(stale.length) C(stale.length+' hand-edited section'+(stale.length>1?'s are':' is')+' out of date',
     'The form has changed since '+(stale.length>1?'these were':'this was')+' edited by hand, so the report is still printing the old wording: '
     +stale.map(secLabel).join('; ')+'. Reset '+(stale.length>1?'them':'it')+' to pick up your entries, or retype the change into the section itself.','✎','#layoutPanel');
+  const pinned=Object.keys(S.rowEdit||{}).filter(id=>detailRowDefs()[id]&&rowOn(id));
+  if(pinned.length) C(pinned.length+' line'+(pinned.length>1?'s in the details table have':' in the details table has')+' been written over by hand',
+    pinned.map(rowLabel).join('; ')+' — '+(pinned.length>1?'these lines no longer follow':'this line no longer follows')+' the form. Every other line in the table still does.','✎','#layoutPanel');
   const unknown=unknownAgeSecs().filter(id=>secDefs()[id]||String(id).indexOf('doc:')===0);
   if(unknown.length) C(unknown.length+' section'+(unknown.length>1?'s were':' was')+' edited by hand in an earlier draft',
     'These stopped following the form before this version started tracking when: '+unknown.map(secLabel).join('; ')
