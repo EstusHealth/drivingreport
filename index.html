@@ -2684,9 +2684,28 @@ function physFillOne(id){
   const r=PHYS_ROWS.find(x=>x.id===id); if(!r) return;
   S.phys[id].note=r.def||''; buildPhys(); update();
 }
-function physToggleIssue(id){ S.phys[id].issue=!S.phys[id].issue; buildPhys(); update(); }
+function physToggleIssue(id){
+  const p=S.phys[id]; p.issue=!p.issue;
+  const tog=document.querySelector(`#prow_${id} .isstog`);
+  if(tog){ tog.classList.toggle('on', p.issue); tog.textContent = p.issue? '⚠ difficulty' : 'difficulty?'; }
+  else buildPhys();
+  update();
+}
 /* Typing must not rebuild #physRows: a rebuild would collapse an open how-to card
    and drop the caret. Only the row's own class and the blank counter change. */
+/* A measurement is the other half of that rule. The only thing in the panel that
+   a figure changes is this row's auto-interpretation, so it is rewritten in place
+   — rebuilding would re-emit every disclosure closed, shutting the measurements
+   card around the field being typed into and taking the caret with it. */
+function physAutoHTML(r){
+  const ip = r.interp? r.interp(S.phys[r.id]) : null;
+  return ip? `<div class="autonote"><b>${ip.pill==='fail'?'⚠ ':''}Auto-interpretation:</b> ${ip.txt}</div>` : '';
+}
+function physAutoNote(id){
+  const r=PHYS_ROWS.find(x=>x.id===id); if(!r) return;
+  const el=document.getElementById('pauto_'+id);
+  if(el) el.innerHTML=physAutoHTML(r);
+}
 /* the sentence is the record, so it is never clipped — the box grows to it */
 function physGrow(el){
   el.style.height='auto';
@@ -2705,6 +2724,7 @@ function physNote(id,el){
   update();
 }
 function buildPhys(){
+  const openCards=new Set([...document.querySelectorAll('#physRows details[data-dk]')].filter(d=>d.open).map(d=>d.dataset.dk));
   const n=physBlank().length;
   const bar=`<div class="bulkbar" style="${n?'':'display:none'}"><button class="btn" onclick="physFillWFL()">✓ Fill the remaining <span id="physFillCount">${n}</span> line${n===1?'':'s'} with the standard wording</button>
     <span>Writes each line's standard sentence into the areas you have not written yet, for you to edit. It never touches a line you have already written.</span></div>`;
@@ -2718,14 +2738,13 @@ function buildPhys(){
         </select></div></div>`;
     }
     const filled=!!txt(p.note);
-    const ip=r.interp? r.interp(p):null;
     const meas=(r.m||[]).map(f=> f.opts
       ? `<div class="f" style="flex:0 0 auto;min-width:0"><label>${f.label}</label>
-         <select style="width:${f.w||'110px'}" onchange="S.phys['${r.id}'].${f.k}=this.value;buildPhys();update()">
+         <select style="width:${f.w||'110px'}" onchange="S.phys['${r.id}'].${f.k}=this.value;physAutoNote('${r.id}');update()">
            <option value=""${p[f.k]?'':' selected'}>—</option>
            ${f.opts.map(o=>`<option ${String(p[f.k])===o?'selected':''}>${o}</option>`).join('')}</select></div>`
       : `<div class="f" style="flex:0 0 auto;min-width:0"><label>${f.label}</label>
-         <input type="text" data-fkey="phys:${r.id}:${f.k}" style="width:${f.w||'110px'}" value="${esc(p[f.k])}" oninput="S.phys['${r.id}'].${f.k}=this.value;keepFocus(buildPhys);update()"></div>`).join('');
+         <input type="text" data-fkey="phys:${r.id}:${f.k}" style="width:${f.w||'110px'}" value="${esc(p[f.k])}" oninput="S.phys['${r.id}'].${f.k}=this.value;physAutoNote('${r.id}');update()"></div>`).join('');
     return `<div class="prow${r.sub?' sub':''}${r.kind==='head'?' head':''}${filled?' filled':''}" id="prow_${r.id}">
       <label>${esc(r.label)}</label>
       <div class="pbody">
@@ -2735,14 +2754,17 @@ function buildPhys(){
           <span class="isstog${p.issue?' on':''}" onclick="physToggleIssue('${r.id}')" title="Mark this area as a difficulty">${p.issue?'⚠ difficulty':'difficulty?'}</span>
           ${r.mmt? `<span class="pnote-x">group-by-group grades go in the optional grid below</span>`:''}
         </div>
-        ${r.m? `<details class="meas"><summary>▸ measurements</summary><div class="measbody">
+        ${r.m? `<details class="meas" data-dk="meas:${r.id}"><summary>▸ measurements</summary><div class="measbody">
           <div class="trow">${meas}</div>
-          ${ip? `<div class="autonote"><b>${ip.pill==='fail'?'⚠ ':''}Auto-interpretation:</b> ${ip.txt}</div>`:''}
+          <div id="pauto_${r.id}">${physAutoHTML(r)}</div>
         </div></details>`:''}
         ${physHowTo(r)}
       </div></div>`;
   }).join('');
   document.getElementById('physRows').innerHTML = bar + rows + physRefs();
+  /* A bulk fill or a reload still rebuilds the panel. Put back the cards the
+     assessor had open, so the screen they were reading does not shut on them. */
+  document.querySelectorAll('#physRows details[data-dk]').forEach(d=>{ if(openCards.has(d.dataset.dk)) d.open=true; });
   physGrowAll();
 }
 /* The proforma prints the scale sources under its physical table. */
@@ -2751,7 +2773,7 @@ function physRefs(){
 }
 function physHowTo(r){
   if(!r.how) return '';
-  return `<details class="ref"><summary>▸ how to screen this one</summary><div class="refcard">
+  return `<details class="ref" data-dk="how:${r.id}"><summary>▸ how to screen this one</summary><div class="refcard">
     <h5>Procedure</h5><ul>${r.how.map((x,i)=>`<li><span class="stepnum">${i+1}.</span> ${x}</li>`).join('')}</ul>
     <h5>Record</h5><p style="margin:0 0 6px">${r.record}</p>
     <h5><span class="dont">Watch for</span></h5><p style="margin:0">${r.watch}</p>
