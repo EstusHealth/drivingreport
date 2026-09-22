@@ -4444,8 +4444,13 @@ function updatePageStyle(){
 
 function bindInputs(){
   document.querySelectorAll('[data-bind]').forEach(el=>{
-    el.addEventListener('input',()=>{ S[el.dataset.bind] = el.value; update(); });
-    if(el.tagName==='SELECT') el.addEventListener('change',()=>{ S[el.dataset.bind]=el.value; update(); });
+    /* Both events, for every field. A native date picker — and browser autofill —
+       can set a value without ever firing `input`, which left the new date sitting
+       in the box and the old one in the report. Taking the value twice is harmless:
+       the second read is the same string and the render is debounced. */
+    const take=()=>{ S[el.dataset.bind] = el.value; update(); };
+    el.addEventListener('input', take);
+    el.addEventListener('change', take);
   });
   document.querySelectorAll('[data-bindbool]').forEach(el=>{
     el.addEventListener('change',()=>{ S[el.dataset.bindbool]=el.checked; update(); });
@@ -4462,9 +4467,8 @@ function bindInputs(){
 }
 function syncForm(){
   document.querySelectorAll('[data-bind]').forEach(el=>{ el.value = S[el.dataset.bind]??''; });
-  document.querySelectorAll('[data-bindbool]').forEach(el=>{
-    el.addEventListener('change',()=>{ S[el.dataset.bindbool]=el.checked; update(); });
-  });
+  /* syncForm puts state onto the form; the tickboxes are bound once in
+     bindInputs. Re-binding them here stacked another listener on every load. */
   document.querySelectorAll('[data-bindchk]').forEach(el=>{ el.checked = (S[el.dataset.bindchk]||[]).includes(el.value); });
   document.querySelectorAll('[data-bindbool]').forEach(el=>{ el.checked = !!S[el.dataset.bindbool]; });
   buildMedRows(); buildReviewed(); buildNeeds(); buildPhys(); buildTests(); buildChecklist(); buildRecs();
