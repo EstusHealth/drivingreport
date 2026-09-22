@@ -416,6 +416,7 @@ body.preview-hidden #formPane{width:100%;border-right:none}
 .lname{font-weight:600;font-size:13px;line-height:1.3}
 .ltag{display:inline-block;margin-left:6px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--faint);border-radius:3px;padding:1px 5px;vertical-align:1px}
 .ltag.ed{background:var(--plum)}
+.lhint.pinned{color:#8c2f2f}
 .lhint{font-size:11px;color:var(--faint);line-height:1.4;margin-top:2px}
 .lhead{width:100%;margin-top:5px;border:1px solid #d6d4cf;border-radius:4px;padding:4px 7px;font-size:12.5px;font-family:'Barlow',sans-serif}
 .lhead:focus{outline:2px solid var(--teal);outline-offset:-1px}
@@ -463,8 +464,16 @@ body.editreport .rsecghost{display:block;margin:8mm 0 0;padding:9px 11px;border:
 .rsecghost button:hover{background:#fff;border-color:var(--teal);color:var(--ink)}
 .rsecghost button span{color:var(--teal);font-weight:600}
 
+.handedited{position:relative;outline:2px solid #c8a24a;outline-offset:4px}
+.handedited::before{content:'hand-edited — this section no longer follows the form';position:absolute;top:-9px;left:0;
+  background:#c8a24a;color:#241f14;font-family:'Barlow Semi Condensed',sans-serif;font-size:8pt;letter-spacing:.06em;
+  text-transform:uppercase;padding:1px 7px;border-radius:3px;z-index:2}
+.handedited.stale{outline-color:#8c2f2f}
+.handedited.stale::before{content:'out of date — the form has changed since this was edited by hand';background:#8c2f2f;color:#fff}
 @media print{
   body{background:#fff}
+  .handedited{outline:none!important}
+  .handedited::before{display:none!important}
   #formPane,#toolbar,#gradbar,#previewClose,#docTabs,#editBar,#pvTop{display:none!important}
   .secchrome,.rsecghost{display:none!important}
   .rsecwrap{border:none!important;background:none!important;margin:0!important;padding:0!important}
@@ -1897,8 +1906,8 @@ function freshState(){
        and which of them the assessor has since written over by hand. Empty
        means "exactly as the builder ships", so a draft that never touched
        the layout picks up every later change to the standard report. */
-    secOrder:[], secOff:{}, secTitle:{}, secGroupTitle:{}, secEdit:{}, secCustom:[],
-    rowOrder:[], rowOff:{}, rowLabel:{}, rowCustom:[],
+    secOrder:[], secOff:{}, secTitle:{}, secGroupTitle:{}, secEdit:{}, secBase:{}, secCustom:[],
+    rowOrder:[], rowOff:{}, rowLabel:{}, rowEdit:{}, rowCustom:[],
   };
   PHYS_ROWS.forEach(r=> s.phys[r.id]={note:'', issue:false, v1:'', v2:'', v3:'', v4:''});
   MUSCLES.forEach(m=> s.muscles[m.id]={tested:'no', grade:'', note:''});
@@ -2684,9 +2693,28 @@ function physFillOne(id){
   const r=PHYS_ROWS.find(x=>x.id===id); if(!r) return;
   S.phys[id].note=r.def||''; buildPhys(); update();
 }
-function physToggleIssue(id){ S.phys[id].issue=!S.phys[id].issue; buildPhys(); update(); }
+function physToggleIssue(id){
+  const p=S.phys[id]; p.issue=!p.issue;
+  const tog=document.querySelector(`#prow_${id} .isstog`);
+  if(tog){ tog.classList.toggle('on', p.issue); tog.textContent = p.issue? '⚠ difficulty' : 'difficulty?'; }
+  else buildPhys();
+  update();
+}
 /* Typing must not rebuild #physRows: a rebuild would collapse an open how-to card
    and drop the caret. Only the row's own class and the blank counter change. */
+/* A measurement is the other half of that rule. The only thing in the panel that
+   a figure changes is this row's auto-interpretation, so it is rewritten in place
+   — rebuilding would re-emit every disclosure closed, shutting the measurements
+   card around the field being typed into and taking the caret with it. */
+function physAutoHTML(r){
+  const ip = r.interp? r.interp(S.phys[r.id]) : null;
+  return ip? `<div class="autonote"><b>${ip.pill==='fail'?'⚠ ':''}Auto-interpretation:</b> ${ip.txt}</div>` : '';
+}
+function physAutoNote(id){
+  const r=PHYS_ROWS.find(x=>x.id===id); if(!r) return;
+  const el=document.getElementById('pauto_'+id);
+  if(el) el.innerHTML=physAutoHTML(r);
+}
 /* the sentence is the record, so it is never clipped — the box grows to it */
 function physGrow(el){
   el.style.height='auto';
@@ -2705,6 +2733,7 @@ function physNote(id,el){
   update();
 }
 function buildPhys(){
+  const openCards=new Set([...document.querySelectorAll('#physRows details[data-dk]')].filter(d=>d.open).map(d=>d.dataset.dk));
   const n=physBlank().length;
   const bar=`<div class="bulkbar" style="${n?'':'display:none'}"><button class="btn" onclick="physFillWFL()">✓ Fill the remaining <span id="physFillCount">${n}</span> line${n===1?'':'s'} with the standard wording</button>
     <span>Writes each line's standard sentence into the areas you have not written yet, for you to edit. It never touches a line you have already written.</span></div>`;
@@ -2718,14 +2747,13 @@ function buildPhys(){
         </select></div></div>`;
     }
     const filled=!!txt(p.note);
-    const ip=r.interp? r.interp(p):null;
     const meas=(r.m||[]).map(f=> f.opts
       ? `<div class="f" style="flex:0 0 auto;min-width:0"><label>${f.label}</label>
-         <select style="width:${f.w||'110px'}" onchange="S.phys['${r.id}'].${f.k}=this.value;buildPhys();update()">
+         <select style="width:${f.w||'110px'}" onchange="S.phys['${r.id}'].${f.k}=this.value;physAutoNote('${r.id}');update()">
            <option value=""${p[f.k]?'':' selected'}>—</option>
            ${f.opts.map(o=>`<option ${String(p[f.k])===o?'selected':''}>${o}</option>`).join('')}</select></div>`
       : `<div class="f" style="flex:0 0 auto;min-width:0"><label>${f.label}</label>
-         <input type="text" data-fkey="phys:${r.id}:${f.k}" style="width:${f.w||'110px'}" value="${esc(p[f.k])}" oninput="S.phys['${r.id}'].${f.k}=this.value;keepFocus(buildPhys);update()"></div>`).join('');
+         <input type="text" data-fkey="phys:${r.id}:${f.k}" style="width:${f.w||'110px'}" value="${esc(p[f.k])}" oninput="S.phys['${r.id}'].${f.k}=this.value;physAutoNote('${r.id}');update()"></div>`).join('');
     return `<div class="prow${r.sub?' sub':''}${r.kind==='head'?' head':''}${filled?' filled':''}" id="prow_${r.id}">
       <label>${esc(r.label)}</label>
       <div class="pbody">
@@ -2735,14 +2763,17 @@ function buildPhys(){
           <span class="isstog${p.issue?' on':''}" onclick="physToggleIssue('${r.id}')" title="Mark this area as a difficulty">${p.issue?'⚠ difficulty':'difficulty?'}</span>
           ${r.mmt? `<span class="pnote-x">group-by-group grades go in the optional grid below</span>`:''}
         </div>
-        ${r.m? `<details class="meas"><summary>▸ measurements</summary><div class="measbody">
+        ${r.m? `<details class="meas" data-dk="meas:${r.id}"><summary>▸ measurements</summary><div class="measbody">
           <div class="trow">${meas}</div>
-          ${ip? `<div class="autonote"><b>${ip.pill==='fail'?'⚠ ':''}Auto-interpretation:</b> ${ip.txt}</div>`:''}
+          <div id="pauto_${r.id}">${physAutoHTML(r)}</div>
         </div></details>`:''}
         ${physHowTo(r)}
       </div></div>`;
   }).join('');
   document.getElementById('physRows').innerHTML = bar + rows + physRefs();
+  /* A bulk fill or a reload still rebuilds the panel. Put back the cards the
+     assessor had open, so the screen they were reading does not shut on them. */
+  document.querySelectorAll('#physRows details[data-dk]').forEach(d=>{ if(openCards.has(d.dataset.dk)) d.open=true; });
   physGrowAll();
 }
 /* The proforma prints the scale sources under its physical table. */
@@ -2751,7 +2782,7 @@ function physRefs(){
 }
 function physHowTo(r){
   if(!r.how) return '';
-  return `<details class="ref"><summary>▸ how to screen this one</summary><div class="refcard">
+  return `<details class="ref" data-dk="how:${r.id}"><summary>▸ how to screen this one</summary><div class="refcard">
     <h5>Procedure</h5><ul>${r.how.map((x,i)=>`<li><span class="stepnum">${i+1}.</span> ${x}</li>`).join('')}</ul>
     <h5>Record</h5><p style="margin:0 0 6px">${r.record}</p>
     <h5><span class="dont">Watch for</span></h5><p style="margin:0">${r.watch}</p>
@@ -3354,10 +3385,14 @@ function detailTable(){
   const rows=detailRowOrder().map(id=>{
     const r=defs[id]; if(!r || !rowOn(id)) return '';
     let v=''; try{ v=String(r.val()??''); }catch(e){ v=''; }
+    const ov=(S.rowEdit||{})[id];
     /* the standard lines print even when empty, as the proforma does — a line
        you added yourself only earns its row once it says something */
-    if(r.hideIfEmpty && !txt(v)) return '';
-    return TR(esc(rowLabel(id)), v);
+    if(r.hideIfEmpty && !txt(v) && ov==null) return '';
+    /* A cell written over by hand pins that cell alone. Every other line in the
+       table goes on following the form, so changing a date still reaches it. */
+    const cell = ov!=null? ov : paraSplit(v);
+    return `<tr data-row="${att(id)}"><td style="${ST.lbl}">${esc(rowLabel(id))}</td><td style="${ST.td}">${cell}</td></tr>`;
   }).filter(Boolean).join('');
   return rows? `<table style="${ST.tbl}">${rows}</table>` : '';
 }
@@ -3398,7 +3433,7 @@ const REPORT_SECTIONS = [
    }},
 
   {id:'referral', label:'Reason for referral', group:'gBackground', hlevel:'h3', heading:'Reason for Referral', always:true,
-   build:()=>P(S.reasonReferral)},
+   field:'reasonReferral', build:()=>P(S.reasonReferral)},
 
   {id:'consent', label:'Consent', group:'gBackground', hlevel:'h3', heading:'Consent',
    hint:'Consent to the assessment and to the report being released. The student sentence is derived from the attendance toggle, so it cannot go missing.',
@@ -3411,10 +3446,10 @@ const REPORT_SECTIONS = [
 
   {id:'symptoms', label:'Current symptoms & functional challenges', group:'gBackground', hlevel:'h3',
    heading:'Current Symptoms and Functional Challenges',
-   build:()=>S.symptoms? P(S.symptoms) : ''},
+   field:'symptoms', build:()=>S.symptoms? P(S.symptoms) : ''},
 
   {id:'medhistory', label:'Medical history', group:'gBackground', hlevel:'h3', heading:'Medical History',
-   build:()=>S.medHistory? P(S.medHistory) : ''},
+   field:'medHistory', build:()=>S.medHistory? P(S.medHistory) : ''},
 
   {id:'treatment', label:'Treatment (medications table)', group:'gBackground', hlevel:'h3', heading:'Treatment',
    build:()=>{
@@ -3551,7 +3586,7 @@ const REPORT_SECTIONS = [
 
   {id:'offroadfb', label:'Feedback after the off-road assessment', group:'gPreRoad', hlevel:'h3',
    heading:'Feedback Following the Off-Road Assessment',
-   build:()=>txt(S.fbOffRoad)? P(S.fbOffRoad) : ''},
+   field:'fbOffRoad', build:()=>txt(S.fbOffRoad)? P(S.fbOffRoad) : ''},
 
   {id:'suitability', label:'Suitability to proceed on road', group:'gPreRoad',
    hint:'The sentence that carries the off-road findings into the drive.',
@@ -3611,13 +3646,13 @@ const REPORT_SECTIONS = [
 
   {id:'onroadfb', label:'Feedback provided to the client', group:'gOnRoad', hlevel:'h3',
    heading:'Feedback Provided to the Client',
-   build:()=>txt(S.fbOnRoad)? P(S.fbOnRoad) : ''},
+   field:'fbOnRoad', build:()=>txt(S.fbOnRoad)? P(S.fbOnRoad) : ''},
 
   {id:'legal', label:'Legal, licensing & insurance information given', group:'gOnRoad',
-   build:()=>txt(S.legalInfo)? P(S.legalInfo) : ''},
+   field:'legalInfo', build:()=>txt(S.legalInfo)? P(S.legalInfo) : ''},
 
   {id:'summary', label:'Summary paragraphs', group:'gSummary', always:true,
-   build:()=>P(S.summaryText)},
+   field:'summaryText', build:()=>P(S.summaryText)},
 
   {id:'recs', label:'Recommendations list', group:'gSummary', always:true,
    build:()=>{
@@ -3637,10 +3672,10 @@ const REPORT_SECTIONS = [
 
   {id:'limitations', label:'Basis of opinion & limitations', group:'gBasis', hlevel:'h3',
    heading:'Basis of Opinion and Limitations',
-   build:()=>S.limitations? P(S.limitations) : ''},
+   field:'limitations', build:()=>S.limitations? P(S.limitations) : ''},
 
   {id:'declaration', label:'Declaration', group:'gBasis', hlevel:'h3', heading:'Declaration',
-   build:()=>S.declarationText? P(S.declarationText) : ''},
+   field:'declarationText', build:()=>S.declarationText? P(S.declarationText) : ''},
 
   {id:'distribution', label:'Prepared for / distribution', group:'gBasis',
    build:()=>S.distribution? `<p style="${ST.p}"><b>This report has been prepared for:</b> ${esc(S.distribution)}. It is confidential and should not be released to other parties without appropriate consent.</p>` : ''},
@@ -3744,7 +3779,8 @@ function buildReport(chrome){
         lead=`<h2 style="${ST.h2}" data-secgroup="${p.group}">${esc(groupTitle(p.group))}</h2>`;
       lastGroup=p.group;
     }
-    h+= chrome? secChromeWrap(p.id, lead, p.html, i, plan.length) : `${lead}<section data-sec="${p.id}">${p.html}</section>`;
+    const flag = secEdited(p.id)? ` class="handedited${secStale(p.id)===true?' stale':''}"` : '';
+    h+= chrome? secChromeWrap(p.id, lead, p.html, i, plan.length) : `${lead}<section data-sec="${p.id}"${flag}>${p.html}</section>`;
   });
   if(chrome) h+=hiddenSecStubs();
   return h;
@@ -3766,7 +3802,7 @@ function secChromeWrap(id, lead, html, i, n){
   const ed = secEdited(id);
   const bar = `<div class="secchrome" contenteditable="false">
       <span class="scname">${esc(secLabel(id))}</span>
-      ${ed? `<span class="scbadge">hand-edited</span>`:''}
+      ${ed? `<span class="scbadge">${secStale(id)===true?'hand-edited · out of date':'hand-edited'}</span>`:''}
       <span class="scsp"></span>
       <button type="button" title="Move up" onmousedown="event.preventDefault()" onclick="moveSec('${id}',-1)" ${i===0?'disabled':''}>↑</button>
       <button type="button" title="Move down" onmousedown="event.preventDefault()" onclick="moveSec('${id}',1)" ${i===n-1?'disabled':''}>↓</button>
@@ -3793,15 +3829,87 @@ function setEditMode(on){
   if(editMode){ const pp=document.getElementById('previewPane'); if(pp) pp.scrollTop=0; }
 }
 function toggleEditMode(){ setEditMode(!editMode); }
-/* Saving on input is what marks a section as hand-edited — simply switching
-   edit mode on must not freeze every section against the form. */
+/* What a section would say if it were still following the form, with any hand
+   edit set aside. Used to tell a real edit from a keystroke typed and undone,
+   and to notice when a frozen section has fallen behind the form. */
+function markupKey(h){ return String(h||'').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim(); }
+function secGeneratedFor(key){
+  if(String(key).indexOf('doc:')===0){
+    const d=DOCS.find(x=>docEditKey(x.id)===key);
+    try{ return d? d.build() : ''; }catch(e){ return ''; }
+  }
+  const keep=(S.secEdit||{})[key];
+  if(keep!=null) delete S.secEdit[key];
+  let h=''; try{ h=secHTML(key); }catch(e){ h=''; }
+  if(keep!=null) S.secEdit[key]=keep;
+  return h;
+}
+/* A hand edit stops the section regenerating, so the report can quietly keep
+   printing a date, a vehicle or a name the form has since moved on from. The
+   wording the form gave at the moment of the edit is recorded alongside it;
+   when the form no longer agrees with that, the section is stale and says so. */
+function secStale(key){
+  if(!secEdited(key)) return false;
+  const base=(S.secBase||{})[key];
+  if(base==null) return null;          /* frozen before this was recorded — unknowable */
+  return markupKey(base)!==markupKey(secGeneratedFor(key));
+}
+function staleSecs(){ return Object.keys(S.secEdit||{}).filter(k=>secStale(k)===true); }
+function unknownAgeSecs(){ return Object.keys(S.secEdit||{}).filter(k=>secStale(k)===null); }
+/* Turning rendered markup back into the plain text a form field holds. */
+function htmlToText(h){
+  const d=document.createElement('div');
+  d.innerHTML=String(h||'').replace(/<\/p\s*>\s*<p[^>]*>/gi,'\n\n').replace(/<br\s*\/?>/gi,'\n');
+  return (d.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').trim();
+}
+/* A section that is nothing but one form field is not frozen when it is edited
+   in the report — the words go back to the field they came from, so the form and
+   the report say the same thing and both stay live. */
+function absorbFieldSection(el,id,field){
+  const ps=[...el.querySelectorAll('p')];
+  const text = ps.length? ps.map(x=>htmlToText(x.innerHTML)).join('\n\n').trim() : htmlToText(el.innerHTML);
+  if(S[field]!==text){
+    S[field]=text;
+    const inp=document.querySelector(`[data-bind="${field}"]`);
+    if(inp && inp.value!==text) inp.value=text;
+  }
+  const h=el.querySelector('h1,h2,h3');
+  if(h){ const t=h.textContent.trim(); if(t!==secHeading(id)) (S.secTitle=S.secTitle||{})[id]=t; }
+}
+/* The details table is one line per field, so an edit pins the line it was made
+   on and nothing else. A line typed back to what the form says is unpinned again. */
+function absorbDetailEdits(el){
+  const defs=detailRowDefs();
+  el.querySelectorAll('tr[data-row]').forEach(tr=>{
+    const id=tr.dataset.row, r=defs[id]; if(!r) return;
+    const lab=tr.children[0], cell=tr.children[1]; if(!cell) return;
+    let v=''; try{ v=String(r.val()??''); }catch(e){ v=''; }
+    if(markupKey(cell.innerHTML)===markupKey(paraSplit(v))){ if(S.rowEdit) delete S.rowEdit[id]; }
+    else (S.rowEdit=S.rowEdit||{})[id]=cell.innerHTML;
+    if(lab){ const t=lab.textContent.trim(); if(t!==rowLabel(id)) (S.rowLabel=S.rowLabel||{})[id]=t; }
+  });
+}
 let secSaveTimer=null;
 function wireSecEditing(){
   if(!editMode) return;
   document.querySelectorAll('#reportRoot .rsecbody').forEach(el=>{
     el.addEventListener('input',()=>{
       const id=el.dataset.sec;
-      (S.secEdit=S.secEdit||{})[id]=el.innerHTML;
+      const def=secDefs()[id]||{};
+      if(def.field){ absorbFieldSection(el,id,def.field); }
+      else if(def.fields){ absorbDetailEdits(el); }
+      else {
+        const now=el.innerHTML, gen=secGeneratedFor(id);
+        /* Typed and undone, or an input event the browser raised without a change:
+           leave the section following the form rather than freezing it by accident. */
+        if(markupKey(now)===markupKey(gen)){
+          if(S.secEdit) delete S.secEdit[id];
+          if(S.secBase) delete S.secBase[id];
+        }else{
+          (S.secEdit=S.secEdit||{})[id]=now;
+          (S.secBase=S.secBase||{})[id]=gen;
+        }
+      }
       clearTimeout(secSaveTimer);
       secSaveTimer=setTimeout(()=>{ autosave(); updateBadge(); buildLayoutPanel(); markChromeEdited(id); },400);
     });
@@ -3851,6 +3959,8 @@ function setSecOff(id,off){
 function toggleSec(id){ setSecOff(id, secOn(id)); }
 function resetSec(id){
   if(S.secEdit) delete S.secEdit[id];
+  if(S.secBase) delete S.secBase[id];
+  if(secDefs()[id]&&secDefs()[id].fields) S.rowEdit={};
   reportStale=true; syncPanelsAndRender();
 }
 function setSecTitle(id,v){
@@ -3885,6 +3995,7 @@ function delCustomSec(id){
   S.secCustom=(S.secCustom||[]).filter(c=>c.id!==id);
   if(S.secOrder) S.secOrder=S.secOrder.filter(x=>x!==id);
   if(S.secEdit) delete S.secEdit[id];
+  if(S.secBase) delete S.secBase[id];
   if(S.secOff) delete S.secOff[id];
   reportStale=true; syncPanelsAndRender();
 }
@@ -3892,7 +4003,7 @@ function clearSecEdits(){
   const n=Object.keys(S.secEdit||{}).length;
   if(!n) return;
   if(!confirm(`Undo the hand edits in ${n} section${n>1?'s':''} and go back to the generated wording?`)) return;
-  S.secEdit={}; reportStale=true; syncPanelsAndRender();
+  S.secEdit={}; S.secBase={}; S.rowEdit={}; reportStale=true; syncPanelsAndRender();
 }
 function resetLayout(){
   if(!confirm('Put every section back to its standard place, heading and visibility? Sections you added yourself are kept, and hand edits are not touched.')) return;
@@ -3902,6 +4013,8 @@ function resetLayout(){
 function syncPanelsAndRender(){ buildLayoutPanel(); render(); autosave(); }
 
 /* ---------- details-table fields ---------- */
+function rowPinned(id){ return (S.rowEdit||{})[id]!=null; }
+function resetRow(id){ if(S.rowEdit) delete S.rowEdit[id]; reportStale=true; syncPanelsAndRender(); }
 function rowOrderSaved(){ S.rowOrder=detailRowOrder(); return S.rowOrder; }
 function moveRow(id,dir){
   const o=rowOrderSaved(); const i=o.indexOf(id); const j=i+dir;
@@ -3955,7 +4068,7 @@ function buildLayoutPanel(){
     rows+=`<div class="lrow${on?'':' off'}">
       <input type="checkbox" class="lchk" ${on?'checked':''} onchange="toggleSec('${id}')" title="${on?'Take out of the report':'Put back in the report'}">
       <div class="lmain">
-        <div class="lname">${esc(d.label||id)}${d.custom?'<span class="ltag">yours</span>':''}${ed?'<span class="ltag ed">hand-edited</span>':''}</div>
+        <div class="lname">${esc(d.label||id)}${d.custom?'<span class="ltag">yours</span>':''}${ed?`<span class="ltag ed">${secStale(id)===true?'hand-edited · OUT OF DATE':'hand-edited'}</span>`:''}</div>
         ${d.hint? `<div class="lhint">${esc(d.hint)}</div>`:''}
         ${(d.hlevel||d.custom)? `<input type="text" class="lhead" data-secfield="${id}" value="${att(head)}" placeholder="(no heading)" oninput="setSecTitle('${id}',this.value)" title="Heading text">`:''}
         ${d.custom? `<select class="llevel" onchange="setSecLevel('${id}',this.value)">`+
@@ -3996,11 +4109,13 @@ function detailFieldsPanel(){
       <div class="lmain">
         <input type="text" class="lhead" data-rowfield="${id}" value="${att(rowLabel(id))}" placeholder="Field name" oninput="setRowLabel('${id}',this.value)">
         ${r.custom? `<input type="text" class="lhead" value="${att(r.val()||'')}" placeholder="What it says" oninput="setRowValue('${id}',this.value)">`
+          : rowPinned(id)? `<div class="lhint pinned">written over by hand — prints “${esc(jtxt(String((S.rowEdit||{})[id])).slice(0,60))}”, not the form's “${esc(jtxt(String(r.val()??'')).slice(0,60)||'(empty)')}”</div>`
           : `<div class="lhint">from the form — ${esc(jtxt(String(r.val()??'')).slice(0,90)||'(empty)')}</div>`}
       </div>
       <div class="lacts">
         <button class="btn tiny" onclick="moveRow('${id}',-1)" ${i===0?'disabled':''} title="Move up">↑</button>
         <button class="btn tiny" onclick="moveRow('${id}',1)" ${i===arr.length-1?'disabled':''} title="Move down">↓</button>
+        ${rowPinned(id)? `<button class="btn tiny" onclick="resetRow('${id}')" title="Go back to the form's wording">↺</button>`:''}
         ${r.custom? `<button class="btn tiny del" onclick="delCustomRow('${id}')" title="Delete this field">✕</button>`:''}
       </div>
     </div>`;
@@ -4422,8 +4537,13 @@ function updatePageStyle(){
 
 function bindInputs(){
   document.querySelectorAll('[data-bind]').forEach(el=>{
-    el.addEventListener('input',()=>{ S[el.dataset.bind] = el.value; update(); });
-    if(el.tagName==='SELECT') el.addEventListener('change',()=>{ S[el.dataset.bind]=el.value; update(); });
+    /* Both events, for every field. A native date picker — and browser autofill —
+       can set a value without ever firing `input`, which left the new date sitting
+       in the box and the old one in the report. Taking the value twice is harmless:
+       the second read is the same string and the render is debounced. */
+    const take=()=>{ S[el.dataset.bind] = el.value; update(); };
+    el.addEventListener('input', take);
+    el.addEventListener('change', take);
   });
   document.querySelectorAll('[data-bindbool]').forEach(el=>{
     el.addEventListener('change',()=>{ S[el.dataset.bindbool]=el.checked; update(); });
@@ -4440,9 +4560,8 @@ function bindInputs(){
 }
 function syncForm(){
   document.querySelectorAll('[data-bind]').forEach(el=>{ el.value = S[el.dataset.bind]??''; });
-  document.querySelectorAll('[data-bindbool]').forEach(el=>{
-    el.addEventListener('change',()=>{ S[el.dataset.bindbool]=el.checked; update(); });
-  });
+  /* syncForm puts state onto the form; the tickboxes are bound once in
+     bindInputs. Re-binding them here stacked another listener on every load. */
   document.querySelectorAll('[data-bindchk]').forEach(el=>{ el.checked = (S[el.dataset.bindchk]||[]).includes(el.value); });
   document.querySelectorAll('[data-bindbool]').forEach(el=>{ el.checked = !!S[el.dataset.bindbool]; });
   buildMedRows(); buildReviewed(); buildNeeds(); buildPhys(); buildTests(); buildChecklist(); buildRecs();
@@ -4465,7 +4584,7 @@ function normalise(raw){
      nothing reads. */
   ['notes','notesLocked','notesLockedAt','notesRecordedBy','equip','equipAt','equipWhy','aiUse','vehicle','ackAdvisories','admin'].forEach(k=>delete s[k]);
   Object.keys(s.checklist||{}).forEach(k=>{ if(s.checklist[k]) delete s.checklist[k].refs; });
-  ['secOff','secTitle','secGroupTitle','secEdit','rowOff','rowLabel'].forEach(k=>{
+  ['secOff','secTitle','secGroupTitle','secEdit','secBase','rowOff','rowLabel','rowEdit'].forEach(k=>{
     if(!s[k] || typeof s[k]!=='object' || Array.isArray(s[k])) s[k]={};
   });
   ['secOrder','rowOrder'].forEach(k=>{ s[k]=Array.isArray(s[k])? s[k].filter(x=>typeof x==='string'):[]; });
@@ -5310,9 +5429,17 @@ function validate(){
     if(!docOn(d.id)) return;
     C(d.label+' has been edited by hand','It no longer follows the form, so a change you make now will not reach it. Read it before you export, or reset it to the generated wording.','✎','#layoutPanel');
   });
-  const handEdited=Object.keys(S.secEdit||{}).filter(id=>secDefs()[id]);
-  if(handEdited.length) C(handEdited.length+' section'+(handEdited.length>1?'s have':' has')+' been edited by hand',
-    'These no longer follow the form: '+handEdited.map(secLabel).join('; ')+'. Read them against your entries before you export, or reset them to the generated wording.','✎','#layoutPanel');
+  const stale=staleSecs();
+  if(stale.length) C(stale.length+' hand-edited section'+(stale.length>1?'s are':' is')+' out of date',
+    'The form has changed since '+(stale.length>1?'these were':'this was')+' edited by hand, so the report is still printing the old wording: '
+    +stale.map(secLabel).join('; ')+'. Reset '+(stale.length>1?'them':'it')+' to pick up your entries, or retype the change into the section itself.','✎','#layoutPanel');
+  const pinned=Object.keys(S.rowEdit||{}).filter(id=>detailRowDefs()[id]&&rowOn(id));
+  if(pinned.length) C(pinned.length+' line'+(pinned.length>1?'s in the details table have':' in the details table has')+' been written over by hand',
+    pinned.map(rowLabel).join('; ')+' — '+(pinned.length>1?'these lines no longer follow':'this line no longer follows')+' the form. Every other line in the table still does.','✎','#layoutPanel');
+  const unknown=unknownAgeSecs().filter(id=>secDefs()[id]||String(id).indexOf('doc:')===0);
+  if(unknown.length) C(unknown.length+' section'+(unknown.length>1?'s were':' was')+' edited by hand in an earlier draft',
+    'These stopped following the form before this version started tracking when: '+unknown.map(secLabel).join('; ')
+    +'. Check each one against your entries before you export — a date or a name you have changed since will not have reached them.','✎','#layoutPanel');
   (S.secCustom||[]).forEach(c=>{
     if((S.secEdit||{})[c.id]!=null || !secOn(c.id)) return;
     if(!txt(c.body)) C('Your section “'+(txt(c.title)||'untitled')+'” is empty','Write it, delete it, or switch it off — an empty heading still prints.','✎','#layoutPanel');
